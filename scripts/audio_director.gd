@@ -9,7 +9,7 @@ extends Node
 const LAKE_DAY := "res://audio/sfx/ambience_lake_V4.ogg"
 const LAKE_NIGHT := "res://audio/sfx/ambience_lake_V5.ogg"
 const BIRDS := "res://audio/sfx/birds/BirdsAmbience.ogg"
-const RAIN := "res://audio/sfx/weather/RainAmbience.ogg"
+const RAIN := "res://audio/sfx/weather/rain_loop.ogg"
 const UI_CLICK := "res://audio/sfx/distance_click_1.ogg"
 ## Cabin / interior only. The lake clock must not start these.
 const CABIN_DAY := "res://audio/sfx/ambience_apartment_day_loop.ogg"
@@ -65,16 +65,17 @@ func _ready() -> void:
 	_rain = _add_player(BUS_AMBIENCE, _load_loop(RAIN), "Rain")
 	_cabin_day = _add_player(BUS_AMBIENCE, _load_loop(CABIN_DAY), "CabinDay")
 	_cabin_night = _add_player(BUS_AMBIENCE, _load_loop(CABIN_NIGHT), "CabinNight")
-	_wrong_splashes = [_wrong_splash(910.0, 7), _wrong_splash(1340.0, 19), _wrong_splash(1680.0, 31)]
+	AudioSynth.ensure()
+	_wrong_splashes = AudioSynth.wrong_splashes
 	_splash = _add_player(BUS_AMBIENCE, _wrong_splashes[0], "DistantSplash")
-	_snap = _add_player(BUS_SFX, _noise_burst(), "LineSnap")
-	_miss = _add_player(BUS_UI, _fail_blip(), "MissAway")
-	_ui = _add_player(BUS_UI, _load_one_shot(UI_CLICK), "UiClick")
-	_latch = _add_player(BUS_UI, _latch_click(), "TackleLatch")
-	_chime = _add_player(BUS_UI, _major_chime(), "CatchChime")
-	_keep = _add_player(BUS_UI, _confirm_blip(), "KeepBlip")
-	_release = _add_player(BUS_SFX, _water_slip(), "ReleaseSlip")
-	_steps = [_wood_step(112.0), _wood_step(148.0), _wood_step(186.0)]
+	_snap = _add_player(BUS_SFX, AudioSynth.line_snap, "LineSnap")
+	_miss = _add_player(BUS_UI, AudioSynth.missed_hook, "MissAway")
+	_ui = _add_player(BUS_UI, AudioSynth.resolve(UI_CLICK, AudioSynth.ui_click), "UiClick")
+	_latch = _add_player(BUS_UI, AudioSynth.tackle_latch, "TackleLatch")
+	_chime = _add_player(BUS_UI, AudioSynth.catch_chime, "CatchChime")
+	_keep = _add_player(BUS_UI, AudioSynth.keep_blip, "KeepBlip")
+	_release = _add_player(BUS_SFX, AudioSynth.release_slip, "ReleaseSlip")
+	_steps = AudioSynth.dock_steps
 	_step = _add_player(BUS_SFX, _steps[0], "DockStep")
 	_step.volume_db = -8.0
 	_ui.volume_db = -2.0
@@ -183,8 +184,6 @@ func play_release() -> void:
 	_play(_release, randf_range(0.9, 1.08))
 
 func play_ui_click() -> void:
-	if _ui.stream == null:
-		_ui.stream = _tick()
 	_play(_ui, randf_range(0.97, 1.05))
 
 func play_tackle_latch() -> void:
@@ -265,127 +264,9 @@ func _load_loop(path: String) -> AudioStream:
 
 func _load_one_shot(path: String) -> AudioStream:
 	if not ResourceLoader.exists(path):
-		push_warning("AudioDirector: missing %s" % path)
+		push_warning("AudioDirector: missing bed %s" % path)
 		return null
 	var loaded: AudioStream = load(path)
 	if loaded == null:
 		return null
 	return loaded.duplicate() as AudioStream
-
-func _wood_step(body_hz: float) -> AudioStreamWAV:
-	var rate := 22050
-	var count := int(rate * 0.085)
-	var data := PackedByteArray()
-	data.resize(count * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = int(body_hz * 1000.0)
-	var low := 0.0
-	for i in count:
-		var t := float(i) / float(count)
-		var env := exp(-t * 16.0)
-		low = lerpf(low, rng.randf_range(-1.0, 1.0), 0.16)
-		var body := sin(TAU * body_hz * float(i) / float(rate)) * exp(-t * 24.0)
-		var sample := clampf((low * 0.45 + body * 0.7) * env, -1.0, 1.0)
-		data.encode_s16(i * 2, int(sample * 28000.0))
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = rate
-	wav.stereo = false
-	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
-	wav.data = data
-	return wav
-
-func _noise_burst() -> AudioStreamWAV:
-	return _render(22050, 0.07, 30000.0, func(i: int, count: int, rate: int) -> float:
-		var t := float(i) / float(count)
-		var env := exp(-t * 22.0)
-		var noise := sin(float(i) * 12.7) * sin(float(i) * 0.37)
-		var thump := sin(TAU * 95.0 * float(i) / float(rate)) * exp(-t * 30.0)
-		return (noise * 0.75 + thump * 0.8) * env
-	)
-
-func _fail_blip() -> AudioStreamWAV:
-	return _render(22050, 0.16, 16000.0, func(i: int, count: int, rate: int) -> float:
-		var t := float(i) / float(count)
-		var hz := lerpf(540.0, 280.0, t)
-		return sin(TAU * hz * float(i) / float(rate)) * exp(-t * 7.0) * (1.0 - t)
-	)
-
-func _major_chime() -> AudioStreamWAV:
-	return _render(22050, 0.42, 14000.0, func(i: int, _count: int, rate: int) -> float:
-		var time := float(i) / float(rate)
-		var env := exp(-time * 4.2)
-		var tone := 0.0
-		tone += sin(TAU * 523.25 * time) * 0.45
-		if time > 0.04:
-			tone += sin(TAU * 659.25 * time) * 0.32
-		if time > 0.08:
-			tone += sin(TAU * 783.99 * time) * 0.24
-		return tone * env
-	)
-
-func _confirm_blip() -> AudioStreamWAV:
-	return _render(22050, 0.14, 12000.0, func(i: int, _count: int, rate: int) -> float:
-		var time := float(i) / float(rate)
-		var env := exp(-time * 10.0)
-		var hz := 660.0 if time < 0.06 else 880.0
-		return sin(TAU * hz * time) * env
-	)
-
-func _water_slip() -> AudioStreamWAV:
-	return _render(22050, 0.18, 14000.0, func(i: int, count: int, rate: int) -> float:
-		var t := float(i) / float(count)
-		var env := sin(PI * t) * exp(-t * 3.0)
-		var noise := sin(float(i) * 2.1) * sin(float(i) * 0.17)
-		var body := sin(TAU * lerpf(420.0, 160.0, t) * float(i) / float(rate))
-		return (noise * 0.35 + body * 0.4) * env
-	)
-
-func _latch_click() -> AudioStreamWAV:
-	return _render(22050, 0.09, 20000.0, func(i: int, count: int, rate: int) -> float:
-		var time := float(i) / float(rate)
-		var t := float(i) / float(count)
-		var first := sin(TAU * 220.0 * time) * exp(-t * 28.0)
-		var second := 0.0
-		if time > 0.028:
-			second = sin(TAU * 160.0 * time) * exp(-(t - 0.3) * 18.0) * 0.7
-		return first * 0.8 + second
-	)
-
-func _wrong_splash(partial_hz: float, seed: int) -> AudioStreamWAV:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
-	var noise: Array[float] = []
-	noise.resize(8)
-	for n in noise.size():
-		noise[n] = rng.randf_range(-1.0, 1.0)
-	return _render(22050, 0.38, 22000.0, func(i: int, count: int, rate: int) -> float:
-		var t := float(i) / float(count)
-		var env := pow(t, 0.35) * exp(-t * 5.5)
-		var bucket := int(t * float(noise.size() - 1))
-		var water := noise[bucket]
-		var ping := sin(TAU * partial_hz * float(i) / float(rate)) * exp(-t * 2.2) * 0.22
-		var thunk := sin(TAU * 70.0 * float(i) / float(rate)) * exp(-t * 14.0)
-		return (water * 0.55 + thunk * 0.5 + ping) * env
-	)
-
-func _tick() -> AudioStreamWAV:
-	return _render(22050, 0.03, 18000.0, func(i: int, count: int, rate: int) -> float:
-		var t := float(i) / float(count)
-		return sin(TAU * 1400.0 * float(i) / float(rate)) * exp(-t * 18.0)
-	)
-
-func _render(rate: int, seconds: float, amp: float, sampler: Callable) -> AudioStreamWAV:
-	var count := maxi(int(rate * seconds), 1)
-	var data := PackedByteArray()
-	data.resize(count * 2)
-	for i in count:
-		var sample := clampf(float(sampler.call(i, count, rate)), -1.0, 1.0)
-		data.encode_s16(i * 2, int(sample * amp))
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = rate
-	wav.stereo = false
-	wav.loop_mode = AudioStreamWAV.LOOP_DISABLED
-	wav.data = data
-	return wav

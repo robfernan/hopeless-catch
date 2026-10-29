@@ -140,28 +140,28 @@ func _init_audio_system() -> void:
 		player.bus = "SFX"
 		add_child(player)
 
-	var streams := {
-		sfx_cast: "res://audio/sfx/whip.ogg",
-		sfx_bite: "res://audio/sfx/sfx_fish_bite_1.ogg",
-		sfx_reel: "res://audio/sfx/reel1.ogg",
-		sfx_splash: "res://audio/sfx/thrash.ogg",
-		sfx_fight: "res://audio/sfx/fighting_loop.ogg",
-		sfx_flap: "res://audio/sfx/flapping.ogg",
-	}
-	var missing: PackedStringArray = []
-	for player in streams:
-		var path: String = streams[player]
-		if ResourceLoader.exists(path):
-			player.stream = load(path)
-			if player == sfx_fight or player == sfx_flap:
-				var looping := player.stream.duplicate() as AudioStream
-				if looping is AudioStreamOggVorbis:
-					looping.loop = true
-				player.stream = looping
-		else:
-			missing.append(path)
-	if not missing.is_empty():
-		push_warning("Hopeless Catch SFX missing (left silent for Audio Lead): %s" % ", ".join(missing))
+	AudioSynth.ensure()
+	# A present ogg overrides the synth. Missing files stay audible.
+	var cues: Array = [
+		[sfx_cast, "res://audio/sfx/whip.ogg", AudioSynth.cast_whoosh, false],
+		[sfx_bite, "res://audio/sfx/sfx_fish_bite_1.ogg", AudioSynth.bite_tick, false],
+		[sfx_reel, "res://audio/sfx/reel1.ogg", AudioSynth.reel_tick, false],
+		[sfx_splash, "res://audio/sfx/thrash.ogg", AudioSynth.splash, false],
+		[sfx_fight, "res://audio/sfx/fighting_loop.ogg", AudioSynth.fight_loop, true],
+		[sfx_flap, "res://audio/sfx/flapping.ogg", AudioSynth.flap_loop, true],
+	]
+	for cue in cues:
+		var player: AudioStreamPlayer = cue[0]
+		var path: String = cue[1]
+		var fallback: AudioStream = cue[2]
+		var stream := AudioSynth.resolve(path, fallback)
+		if bool(cue[3]) and stream != fallback and stream != null:
+			stream = stream.duplicate() as AudioStream
+			if stream is AudioStreamOggVorbis or stream is AudioStreamMP3:
+				stream.loop = true
+			elif stream is AudioStreamWAV:
+				stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		player.stream = stream
 
 func _create_rod_reel_mesh() -> void:
 	if not cork_handle or cork_handle.get_node_or_null("ReelPivot"):
