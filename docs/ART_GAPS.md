@@ -82,4 +82,4 @@ The archived game in `archive/love2d/` had a title menu, a horror-jam content no
 
 ## Audio that is not the lake bed
 
-Apartment day, night, fishtank, and outside-apartment loops, plus the church day, night, and bell files, are in `audio/` and are not played on the dock. The dock bed is `ambience_lake_V4` / `ambience_lake_V5` and `birds/BirdsAmbience`. Rain is not running; the hook is `AudioDirector.set_raining()`.
+Apartment day and night loops are cabin beds. `AudioDirector.set_cabin_interior()` can start them later. The lake scene does not call it. Fishtank, outside-apartment, and church files are not the dock bed. The dock bed is `ambience_lake_V4` / `ambience_lake_V5` and `birds/BirdsAmbience`. Rain is not running; the hook is `AudioDirector.set_raining()`.

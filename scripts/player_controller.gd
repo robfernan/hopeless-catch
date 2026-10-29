@@ -293,7 +293,7 @@ func toggle_tackle_box() -> void:
 			desc_lbl.text = "Active Bait: %s | Target Species: %s\n%s" % [b_info.name, b_info.target_species, b_info.description]
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	AudioDirector.play_ui_click()
+	AudioDirector.play_tackle_latch()
 
 func toggle_flashlight() -> void:
 	flashlight_on = !flashlight_on
@@ -377,6 +377,11 @@ func _physics_process(delta: float) -> void:
 	_handle_movement(delta)
 	_handle_fishing_logic(delta)
 	AudioDirector.notify_tension(current_state == State.FIGHTING, line_tension)
+	if sfx_fight:
+		if current_state == State.FIGHTING and sfx_fight.playing:
+			sfx_fight.pitch_scale = lerpf(0.96, 1.12, clampf(line_tension / 100.0, 0.0, 1.0))
+		else:
+			sfx_fight.pitch_scale = 1.0
 	_update_rod_animation(delta)
 	_update_dangling_fish_physics(delta)
 	update_hud()
@@ -595,9 +600,11 @@ func _handle_fishing_logic(delta: float) -> void:
 				var reward: float = current_fish.get("weight", 1.0) * 2.5
 				player_money += reward
 				total_fish_caught += 1
+				AudioDirector.play_keep()
 				_finish_catch()
 			elif Input.is_action_just_pressed("reel_in"):
 				# Release fish: moral bonus
+				AudioDirector.play_release()
 				_finish_catch()
 
 		State.REELING:
@@ -669,6 +676,7 @@ func _on_lure_reached_rod() -> void:
 	if current_state == State.FIGHTING:
 		current_state = State.CAUGHT
 		if sfx_flap: sfx_flap.play()
+		AudioDirector.play_catch_chime()
 		# Pose 3D trophy fish directly in front of camera / hands
 		_spawn_trophy_3d_pose(current_fish.get("model_path", ""))
 	else:
