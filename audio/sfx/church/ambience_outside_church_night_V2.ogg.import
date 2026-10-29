@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/ambience_outside_church_night_V2.ogg-7c6548dd
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

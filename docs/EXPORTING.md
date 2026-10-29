@@ -46,7 +46,7 @@ With threads off, a static host can serve `build/web/`. Open `index.html` throug
 python3 -m http.server 8060 --directory build/web
 ```
 
-Then open `http://localhost:8060/`. Click the canvas before expecting the mouse or audio to lock.
+Then open `http://localhost:8060/`. Click the canvas before expecting the mouse or audio to lock. Ambience beds are OGG Vorbis. The six fishing cues are the oggs in `audio/sfx/`. `AudioSynth` is the fallback when one of those files is missing, and it also supplies snap, miss, dock steps, UI clicks, and the night splash. Bus trims are Master 0 dB, Music −12, Ambience −16, SFX −6, UI −10. Focus loss still mutes Master.
 
 The project renderer is Forward+. That is what Robert's scene and water shader were authored for. If a browser cannot start the 3D view, that is a web-renderer limit to report, not a reason to switch the whole project to Compatibility in this repo without checking the water shader (`shaders/about_fishing_water.gdshader` reads the depth and screen textures).
 

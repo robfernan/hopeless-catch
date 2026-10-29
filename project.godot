@@ -73,6 +73,7 @@ thumb_brake={
 [autoload]
 
 AudioGate="*res://scripts/audio_gate.gd"
+AudioDirector="*res://scripts/audio_director.gd"
 
 [audio]
 

@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/flapping.ogg-35dca98597e8737835d9792a60e18f7a
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

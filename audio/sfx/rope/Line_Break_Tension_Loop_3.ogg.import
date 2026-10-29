@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/Line_Break_Tension_Loop_3.ogg-b266041a103c3e4
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0
