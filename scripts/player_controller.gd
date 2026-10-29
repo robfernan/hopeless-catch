@@ -83,6 +83,7 @@ var total_fish_caught: int = 0
 
 # Audio reel crank cooldown
 var reel_sound_timer: float = 0.0
+var _step_timer: float = 0.0
 
 # Node References
 @onready var camera: Camera3D = $Camera3D
@@ -124,6 +125,7 @@ func _ready() -> void:
 	_wire_hud_sheet()
 	_style_catch_card()
 	_ensure_buoy_placeholder.call_deferred()
+	AudioDirector.notify_clock(time_of_day)
 	update_hud()
 
 func _init_audio_system() -> void:
@@ -151,6 +153,11 @@ func _init_audio_system() -> void:
 		var path: String = streams[player]
 		if ResourceLoader.exists(path):
 			player.stream = load(path)
+			if player == sfx_fight or player == sfx_flap:
+				var looping := player.stream.duplicate() as AudioStream
+				if looping is AudioStreamOggVorbis:
+					looping.loop = true
+				player.stream = looping
 		else:
 			missing.append(path)
 	if not missing.is_empty():
@@ -265,6 +272,7 @@ func _on_bait_selected(bait_name: String) -> void:
 			_bait_index = i
 			break
 	current_bait = bait_name
+	AudioDirector.play_ui_click()
 	var desc_lbl: Label = hud.get_node_or_null("TackleBoxUI/BaitDesc")
 	var b_info = TackleBox.get_bait_by_id(bait_name)
 	if desc_lbl:
@@ -285,11 +293,13 @@ func toggle_tackle_box() -> void:
 			desc_lbl.text = "Active Bait: %s | Target Species: %s\n%s" % [b_info.name, b_info.target_species, b_info.description]
 	else:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	AudioDirector.play_ui_click()
 
 func toggle_flashlight() -> void:
 	flashlight_on = !flashlight_on
 	if flashlight:
 		flashlight.visible = flashlight_on
+	AudioDirector.play_ui_click()
 
 func _input(event: InputEvent) -> void:
 	if tackle_box_open:
@@ -363,8 +373,10 @@ func _physics_process(delta: float) -> void:
 		banner_time = maxf(banner_time - delta, 0.0)
 	_advance_splashes(delta)
 	_handle_day_night_cycle(delta)
+	AudioDirector.notify_clock(time_of_day)
 	_handle_movement(delta)
 	_handle_fishing_logic(delta)
+	AudioDirector.notify_tension(current_state == State.FIGHTING, line_tension)
 	_update_rod_animation(delta)
 	_update_dangling_fish_physics(delta)
 	update_hud()
@@ -423,6 +435,26 @@ func _handle_movement(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, move_speed)
 	
 	move_and_slide()
+	_update_dock_steps(delta)
+
+func _on_dock() -> bool:
+	if not is_on_floor():
+		return false
+	for i in get_slide_collision_count():
+		var collider := get_slide_collision(i).get_collider()
+		if collider is Node and collider.name == "Dock":
+			return true
+	return false
+
+func _update_dock_steps(delta: float) -> void:
+	var speed := Vector2(velocity.x, velocity.z).length()
+	if speed < 0.45 or not _on_dock():
+		return
+	_step_timer -= delta
+	if _step_timer > 0.0:
+		return
+	_step_timer = clampf(1.15 / speed, 0.34, 0.52)
+	AudioDirector.play_dock_step()
 
 func _handle_fishing_logic(delta: float) -> void:
 	if tackle_box_open:
@@ -516,6 +548,7 @@ func _handle_fishing_logic(delta: float) -> void:
 				_attach_fish_to_hook(current_fish.get("model_path", ""))
 			elif bite_reaction_timer <= 0.0:
 				_flash("Too late. It left the bait.")
+				AudioDirector.play_miss()
 				current_state = State.FISHING
 				var b_info = TackleBox.get_bait_by_id(current_bait)
 				bite_timer = randf_range(3.0, 6.0) / b_info.bite_speed_multiplier
@@ -544,6 +577,7 @@ func _handle_fishing_logic(delta: float) -> void:
 			
 			if line_tension >= 100.0:
 				_flash("Line snapped. The fish is gone.")
+				AudioDirector.play_line_snap()
 				current_state = State.IDLE
 				current_fish = {}
 				_detach_fish_from_hook()

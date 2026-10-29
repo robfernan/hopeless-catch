@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/ambience_lake_V5.ogg-b806227b9ca702fc8e33e645
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

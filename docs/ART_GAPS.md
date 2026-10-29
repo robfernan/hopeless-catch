@@ -80,6 +80,6 @@ The HUD labels (`DisciplineLabel`, `StatusLabel`, `WarningLabel`, catch card, ta
 
 The archived game in `archive/love2d/` had a title menu, a horror-jam content note, a field journal, and the dock screenshots under `archive/love2d/Screenshots/Itch_io/`. None of those screens exist in the Godot scene. The Godot tackle box also has no rotten-offal bait. The LÖVE bait list included it.
 
-## Audio files that are present but are not lake art
+## Audio that is not the lake bed
 
-See the README blockers. Chunk 1 added apartment day/night loops and one rain recording. They are not hooked up. The cast, bite, reel, splash, fight, and flap paths the player script expects are absent.
+Apartment day, night, fishtank, and outside-apartment loops, plus the church day, night, and bell files, are in `audio/` and are not played on the dock. The dock bed is `ambience_lake_V4` / `ambience_lake_V5` and `birds/BirdsAmbience`. Rain is not running; the hook is `AudioDirector.set_raining()`.
