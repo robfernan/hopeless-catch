@@ -1,0 +1,11 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://blakewaterhc01"]
+
+[ext_resource type="Shader" path="res://shaders/lake_water.gdshader" id="1"]
+
+[resource]
+render_priority = 0
+shader = ExtResource("1")
+shader_parameter/surface_color = Color(0.396078, 0.67451, 0.698039, 1)
+shader_parameter/depth_color = Color(0.070588, 0.180392, 0.211765, 1)
+shader_parameter/edge_color = Color(0.117647, 0.290196, 0.321569, 1)
+shader_parameter/foam_mix = 0.22

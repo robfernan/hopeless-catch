@@ -124,6 +124,9 @@ func _ready() -> void:
 	_wire_hud_sheet()
 	_style_catch_card()
 	_ensure_buoy_placeholder.call_deferred()
+	_build_angler_blockout()
+	_style_rod_blockout()
+	_ensure_journal_stub()
 	update_hud()
 
 func _init_audio_system() -> void:
@@ -192,6 +195,7 @@ func _create_rod_reel_mesh() -> void:
 	
 	reel_pivot.add_child(crank_arm)
 	cork_handle.add_child(reel_pivot)
+	_tint_reel_for_discipline()
 
 func _setup_tackle_box_ui() -> void:
 	if not hud:
@@ -340,6 +344,7 @@ func _input(event: InputEvent) -> void:
 				if current_state == State.IDLE or current_state == State.FISHING:
 					toggle_tackle_box()
 			KEY_F: toggle_flashlight()
+			KEY_J: _toggle_journal()
 			KEY_P: toggle_retro_shader()
 	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
 		if current_state == State.IDLE or current_state == State.FISHING:
@@ -356,6 +361,7 @@ func set_discipline(new_discipline: FishingTypes.Discipline) -> void:
 		return
 	current_discipline = new_discipline
 	fly_line_out = 8.0
+	_tint_reel_for_discipline()
 	update_hud()
 
 func _physics_process(delta: float) -> void:
@@ -395,7 +401,7 @@ func _handle_day_night_cycle(delta: float) -> void:
 
 func _handle_movement(delta: float) -> void:
 	if global_position.y < -1.0:
-		global_position = Vector3(0.0, 1.8, 3.5)
+		global_position = Vector3(0.0, 1.9, -8.0)
 		velocity = Vector3.ZERO
 
 	if not is_on_floor():
@@ -856,6 +862,119 @@ func update_hud() -> void:
 				fish_img.texture = load(current_fish.get("texture_path"))
 		else:
 			catch_card.visible = false
+
+func _build_angler_blockout() -> void:
+	if camera == null or camera.get_node_or_null("Angler"):
+		return
+	var angler := Node3D.new()
+	angler.name = "Angler"
+	camera.add_child(angler)
+	var torso := BoxMesh.new()
+	torso.size = Vector3(0.46, 0.42, 0.22)
+	torso.material = _flat_mat("2A2018")
+	var torso_inst := MeshInstance3D.new()
+	torso_inst.name = "Torso"
+	torso_inst.mesh = torso
+	torso_inst.position = Vector3(0.0, -0.55, 0.05)
+	angler.add_child(torso_inst)
+	var arm := BoxMesh.new()
+	arm.size = Vector3(0.12, 0.34, 0.12)
+	arm.material = _flat_mat("B8A090")
+	for side in [-1.0, 1.0]:
+		var arm_inst := MeshInstance3D.new()
+		arm_inst.name = "Arm"
+		arm_inst.mesh = arm
+		arm_inst.position = Vector3(0.28 * side, -0.42, -0.12)
+		angler.add_child(arm_inst)
+	if flashlight:
+		var lamp := BoxMesh.new()
+		lamp.size = Vector3(0.08, 0.1, 0.08)
+		var glow := _flat_mat("E07828")
+		glow.emission_enabled = true
+		glow.emission = Color("E07828")
+		glow.emission_energy_multiplier = 0.4
+		lamp.material = glow
+		var lamp_inst := MeshInstance3D.new()
+		lamp_inst.name = "Lantern"
+		lamp_inst.mesh = lamp
+		flashlight.add_child(lamp_inst)
+
+func _style_rod_blockout() -> void:
+	var rod := get_node_or_null("Camera3D/RodPivot/RodMesh") as MeshInstance3D
+	if rod:
+		rod.material_override = _flat_mat("2A2018")
+	var cork := get_node_or_null("Camera3D/RodPivot/RodMesh/CorkHandle") as MeshInstance3D
+	if cork:
+		cork.material_override = _flat_mat("B8A090")
+
+func _tint_reel_for_discipline() -> void:
+	if cork_handle == null:
+		return
+	var reel := cork_handle.get_node_or_null("ReelPivot/ReelBody") as MeshInstance3D
+	if reel == null:
+		return
+	var hex := "B8A090"
+	match current_discipline:
+		FishingTypes.Discipline.BAITCASTING:
+			hex = "2A2018"
+		FishingTypes.Discipline.SPINCAST:
+			hex = "D4C8B0"
+		FishingTypes.Discipline.FLY_FISHING:
+			hex = "E07828"
+		_:
+			hex = "B8A090"
+	reel.material_override = _flat_mat(hex)
+
+func _flat_mat(hex: String) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(hex)
+	mat.roughness = 1.0
+	mat.metallic = 0.0
+	return mat
+
+func _ensure_journal_stub() -> void:
+	if hud == null or hud.get_node_or_null("JournalStub"):
+		return
+	var panel := Panel.new()
+	panel.name = "JournalStub"
+	panel.visible = false
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -210.0
+	panel.offset_right = 210.0
+	panel.offset_top = -260.0
+	panel.offset_bottom = 260.0
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color("D4C8B0")
+	box.border_color = Color("2A2018")
+	box.set_border_width_all(4)
+	panel.add_theme_stylebox_override("panel", box)
+	var title := Label.new()
+	title.text = "Field journal"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(24, 28)
+	title.size = Vector2(372, 32)
+	title.add_theme_color_override("font_color", Color("2A2018"))
+	panel.add_child(title)
+	var body := Label.new()
+	body.text = "Paper stub. Catch notes land here when Art delivers the journal sheet."
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.position = Vector2(28, 78)
+	body.size = Vector2(364, 120)
+	body.add_theme_color_override("font_color", Color("2A2018"))
+	panel.add_child(body)
+	var hint := Label.new()
+	hint.text = "J closes"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(24, 470)
+	hint.size = Vector2(372, 28)
+	hint.add_theme_color_override("font_color", Color("B8A090"))
+	panel.add_child(hint)
+	hud.add_child(panel)
+
+func _toggle_journal() -> void:
+	var panel := hud.get_node_or_null("JournalStub") if hud else null
+	if panel:
+		panel.visible = not panel.visible
 
 func _apply_lake_water_tint() -> void:
 	var day_amount := 0.0
