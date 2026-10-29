@@ -74,7 +74,7 @@ No new art direction is proposed here. The playable scene is still mostly primit
 
 ## Blockers
 
-- **Audio files are still missing.** Buses are Master, Music, Ambience, SFX, and UI. Gameplay players sit on SFX and stay silent until these files exist: `audio/sfx/whip.ogg`, `sfx_fish_bite_1.ogg`, `reel1.ogg`, `thrash.ogg`, `fighting_loop.ogg`, `flapping.ogg`. Nothing was synthesized to fill them. `ambience_apartment_day_loop.ogg` and `ambience_apartment_night_loop.ogg` are not used as the lake bed. Web audio waits for a click or key, and losing window focus mutes Master.
+- **Gameplay one-shots are still missing.** Buses are Master, Music, Ambience, SFX, and UI. Cast, bite, reel, splash, fight, and flap players sit on SFX and stay silent until these files exist: `audio/sfx/whip.ogg`, `sfx_fish_bite_1.ogg`, `reel1.ogg`, `thrash.ogg`, `fighting_loop.ogg`, `flapping.ogg`. Nothing was synthesized to fill them. Chunks 1–3 are on disk (apartment, lake, beach, birds, church, rain, rope). More audio parts are still expected, so none of those beds are playing. Apartment and church loops are not used as the lake bed. Web audio waits for a click or key, and losing window focus mutes Master.
 - **Shore casts** can be reeled back. A missed hook and a snapped line leave a message. Fish stamina changes how hard the line pulls and how fast it comes in.
 - **P1 art slots** are listed in `assets/ART_P1_SLOTS.md`. Those files were not invented. `models/bobber.glb` and `models/buoy_red.glb` are not in the tree.
 - **No shop.** Money is counted and nothing spends it.
