@@ -1,184 +1,93 @@
-# Hopeless Catch - Fishing Horror Game
+# Hopeless Catch
 
-A fishing horror game built with LÖVE 2D, featuring procedurally generated landscapes and atmospheric gameplay.
+A cozy fishing game with a dark secret.
 
-## Project Versions
+**[Play in the browser](https://mungdaal321.itch.io/hopeless-catch)** · [Robert Fernandez](https://robertfernandez.dev)
 
-This repository contains multiple implementations of Hopeless Catch:
+![A pixel fisherman on a wooden dock, line in a blue lake, with mountains and a pale sun behind the clouds](Screenshots/Itch_io/Game.png)
 
-### 🎮 Web Version (WebAssembly) - Itch.io & Local
-- **Location:** `Love2d_Web/`
-- **Technology:** LÖVE 2D compiled to WebAssembly with love.js
-- **Status:** ✅ Fully functional on itch.io and locally
-- **Play Online:** [https://mungdaal321.itch.io/hopeless-catch](https://mungdaal321.itch.io/hopeless-catch)
+You spend the day on the dock at Lake Acheron. Pick a bait, cast, wait on the bobber, and reel the fish in before the line snaps. The clock runs. Rest in the cabin and the next morning starts on the same pier, with different weather.
 
-#### Itch.io Upload Settings (Important!)
+The first screen is a content note for the [Horror Fishing Game Jam](https://itch.io/jam/the-fishing-horror-jam). The field journal keeps another line on every fish you land, and it tells you to leave the water past the red buoy alone after midnight.
 
-When uploading the web version to itch.io, use these exact settings:
+## How to play
 
-**Upload Settings:**
-- **Kind of project:** `HTML` — You have a ZIP or HTML file that will be played in the browser
-- **Upload:** ZIP file from `Love2d_Web/dist/` folder
+On the title menu, choose **Begin Fishing**. Up and Down, or W and S, move the cursor. Space or Enter selects. Space also skips the opening note.
 
-**Embed Options:**
-- ✅ **Embed in page**
-- ✅ **Manually set size**
-- **Viewport dimensions:** `1280` × `720` px (fits everything properly)
-
-**Frame Options:**
-- ✅ **Mobile friendly** — Your project can run on mobile phones
-- **Orientation:** Default
-- ❌ **Automatically start on page load** — Leave unchecked (not recommended)
-- ✅ **Fullscreen button** — Add a button to the bottom right corner
-- ❌ **Enable scrollbars** — Leave unchecked
-- ✅ **SharedArrayBuffer support** — REQUIRED! (Experimental) Enable this or the game won't run
-
-**Theme Settings (for screenshots to display):**
-- Go to **Edit Theme**
-- Set **Screenshots** to **Show** (not Auto)
-
-#### Itch.io Screenshots
-
-**Start Menu**
-![Start Menu](Screenshots/Itch_io/StartMenu.png)
-
-**Gameplay**
-![Gameplay](Screenshots/Itch_io/Game.png)
-
-**Catch Display**
-![Catch Display](Screenshots/Itch_io/CatchDisplay.png)
-
-**Tackle Box**
-![Tackle Box](Screenshots/Itch_io/tacklebox.png)
-
-**How to Play**
-![How to Play](Screenshots/Itch_io/howto.png)
-
-**Full Game View**
-![Full Game View](Screenshots/Itch_io/fullscreenshot.png)
-
-#### Web Version Screenshots
-
-**Start Menu**
-![Start Menu](Screenshots/Love2D_Web/startmenu.png)
-
-**Gameplay**
-![Gameplay](Screenshots/Love2D_Web/game.png)
-
-**Catch Trophy**
-![Catch Trophy](Screenshots/Love2D_Web/catchtrophy.png)
-
-**Pause Menu**
-![Pause Menu](Screenshots/Love2D_Web/pausemenu.png)
-
-**Settings**
-![Settings](Screenshots/Love2D_Web/settings.png)
-
-**How to Play**
-![How to Play](Screenshots/Love2D_Web/howtoplay.png)
-
-### 🖥️ Desktop Version (LÖVE 2D)
-- **Location:** `Love2d Version/`
-- **Technology:** LÖVE 2D (Lua)
-- **File:** `HopelessCatch.love`
-- **Status:** ✅ Original version
-
-## Getting Started
-
-### Run Locally (Desktop)
-1. Install LÖVE 2D from https://love2d.org/
-2. Download `Love2d Version/HopelessCatch.love`
-3. Open with LÖVE 2D or run: `love HopelessCatch.love`
-
-### Run Locally (Web)
-The web version requires special HTTP headers (SharedArrayBuffer support). Use the included Python server:
-
-```bash
-# Navigate to the web version folder
-cd Love2d_Web
-
-# Start the local server (includes required COOP/COEP headers)
-python3 serve.py
-
-# Open in browser
-# http://localhost:3000/
-```
-
-**Troubleshooting:**
-- If the screen is blank, try refreshing the page
-- Use Chrome, Firefox, or Edge for best compatibility
-- Click the game area first to enable keyboard input
-- Press the "Go Fullscreen" button for the best experience
-
-**To stop the server:** Press `Ctrl+C` in the terminal
-
-## Development
-
-See the relevant documentation:
-- [Love2d_Web/README.md](Love2d_Web/README.md) - Web development guide
-- [Love2d_Web/DEVELOPMENT_GUIDE.md](Love2d_Web/DEVELOPMENT_GUIDE.md) - Full developer reference & architecture
-- [Love2d_Web/WEB_PORT_GUIDE.md](Love2d_Web/WEB_PORT_GUIDE.md) - Web port and love.js details
-- [Love2d_Web/ITCH_IO_GUIDE.md](Love2d_Web/ITCH_IO_GUIDE.md) - Itch.io deployment guide
-
-## Technical Notes
-
-### Web Port Requirements
-The WebAssembly port requires SharedArrayBuffer support, which needs special HTTP headers:
-- `Cross-Origin-Opener-Policy: same-origin`
-- `Cross-Origin-Embedder-Policy: require-corp`
-
-**Hosting Compatibility:**
-- ✅ **itch.io** — Works! Enable "SharedArrayBuffer support" in embed options
-- ✅ **Local Python server** — Works with included `serve.py`
-- ❌ **GitHub Pages** — Does not support required headers
-- ❌ **Netlify/Vercel (free tier)** — Does not support required headers
-
-### Why LÖVE 2D?
-LÖVE 2D was chosen for this project because:
-- ✅ Consistent behavior across all desktop platforms (Windows, macOS, Linux)
-- ✅ Simple, clean API for 2D game development
-- ✅ Excellent for rapid prototyping and game jams
-- ✅ Lightweight and performant
-- ⚠️ Limited to 2D (3D requires additional libraries like Lovr)
-- ⚠️ Web deployment requires Emscripten/love.js with header limitations
-
-### Future Considerations
-For projects requiring:
-- **Multi-platform web deployment** - Consider web-native frameworks (Phaser 3, Babylon.js, Needle Engine)
-- **3D support** - Consider Lovr (3D extension for LÖVE), Godot, or custom OpenGL/Vulkan
-- **Universal codebase** - Consider frameworks like Nero.js that target multiple platforms from a single codebase
-
-## Game Controls
+1. Hold **Space** to charge the cast. Release to throw. A longer hold drops the bobber farther out.
+2. Wait. Hold Space while the lure sits if you want it back.
+3. When the bobber dives, press **Space** to set the hook.
+4. Hold **Space** to reel. Release when line tension flashes danger. A full bar snaps the line.
+5. Space closes the catch card. Tab opens the journal, where the catch is written down.
+6. **H** rests in the cabin and starts the next day. Day one is clear. Later days bring rain, fog, and storms.
 
 | Action | Key |
-|--------|-----|
-| Move | WASD or Arrow Keys |
-| Cast / Hook / Reel | SPACE |
-| Open Tackle Box | B |
-| Open Journal | TAB |
-| Enter Cabin | H |
-| Pause | ESC |
+| --- | --- |
+| Walk the dock | A / D, or Left / Right |
+| Cast, hook, and reel | Space (Enter does the same) |
+| Bait box | B |
+| Field journal | Tab |
+| Rest in the cabin | H |
+| Pause | Esc |
+| Restart | F5 |
 
-## Contributing
+The hint bar along the bottom says WASD. On the dock, left and right are what move you. W and S are for menus.
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+The bait box starts with fat worms, sweet corn, live minnows, pungent cheese, and rotten offal. Click a compartment, or choose one with the arrow keys and Enter. Daylight fish include sunfish, bass, trout, catfish, and a rare golden carp. Some of them prefer a specific bait.
 
-## License
+## Run it
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+**Browser.** [mungdaal321.itch.io/hopeless-catch](https://mungdaal321.itch.io/hopeless-catch). Click the game once so the keys and audio focus. The page lists the project as in development, with HTML5 and Windows builds. Fullscreen is the 16:9 view.
 
-## Credits
+**LÖVE, from this repo.** `Love2d Version/HopelessCatch_Source/conf.lua` targets LÖVE 11.4 at 1280×720. The itch.io page recommends [LÖVE 11.5](https://love2d.org/). 11.4 and 11.5 both match this project:
 
-- **LÖVE 2D:** https://love2d.org/
-- **love.js:** https://github.com/Davidobot/love.js
-- **Emscripten:** https://emscripten.org/
+```bash
+cd "Love2d Version/HopelessCatch_Source"
+love .
+```
 
-## Support
+The packaged game file is `Love2d Version/dist/love/HopelessCatch.love`. Open it with LÖVE, or from the repo root:
 
-For issues, questions, or suggestions, please open an issue on GitHub.
+```bash
+love "Love2d Version/dist/love/HopelessCatch.love"
+```
 
----
+**Windows, without installing LÖVE.** Run `Love2d Version/dist/windows/HopelessCatch.exe` from that folder, so it sits next to its DLLs. The same build is zipped at `Love2d Version/dist/HopelessCatch-Windows.zip`.
 
-🏆 *Created for [The Fishing Horror Jam](https://itch.io/jam/the-fishing-horror-jam)*
+**Earlier browser build in the repo.** `Love2d_Web/` is a separate 800×600 scene. From the repository root:
 
-**Enjoy the game and happy fishing!** 🎣🌅
+```bash
+python3 Love2d_Web/serve.py
+```
+
+Open [http://localhost:3000/](http://localhost:3000/) and click the canvas before using the keyboard. That server sends the `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers the WebAssembly build needs. GitHub Pages does not send those headers, so the playable page is the itch.io link above. Ctrl+C stops the server.
+
+## What ships
+
+| | |
+| --- | --- |
+| Playable today | Browser build on itch.io. A Windows `.exe` and a `.love` file are in this repo and on that page. |
+| Source | LÖVE / Lua in `Love2d Version/HopelessCatch_Source` |
+| macOS, Linux, Steam Deck | LÖVE with the source folder or the `.love` file. This repo has no separate app bundle for those systems. |
+| Status | In development, as listed on itch.io. The current source has the dock, cast, reel, journal, bait box, day and night cycle, and weather. |
+| Screenshots | `Screenshots/Itch_io/` is the dock game. `Screenshots/Love2D_Web/` is the earlier browser scene. |
+
+## Also on the dock
+
+![Title menu over a night lake, with Begin Fishing selected](Screenshots/Itch_io/StartMenu.png)
+
+![Tackle tray listing fat worms, sweet corn, live minnows, pungent cheese, and rotten offal](Screenshots/Itch_io/tacklebox.png)
+
+## Star
+
+If you would send someone to this dock, star the repository. That is the whole ask.
+
+## License and credits
+
+[MIT](LICENSE). Copyright MungDaal321 / robfernan.
+
+[Robert Fernandez](https://robertfernandez.dev) ([robfernan](https://github.com/robfernan)). The itch.io page is published as [MungDaal321](https://mungdaal321.itch.io/hopeless-catch).
+
+Built with [LÖVE](https://love2d.org/). The itch.io page credits Aseprite for the pixel art. The in-repo browser port uses [love.js](https://github.com/Davidobot/love.js). Made for the [Horror Fishing Game Jam](https://itch.io/jam/the-fishing-horror-jam).
+
+Bugs and ideas: [CONTRIBUTING.md](CONTRIBUTING.md). Notes on the browser port: [Love2d_Web/README.md](Love2d_Web/README.md).
