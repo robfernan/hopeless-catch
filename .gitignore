@@ -55,9 +55,11 @@ jspm_packages/
 tmp/
 temp/
 
-# Build outputs
+# Godot 4 editor cache and export output
+.godot/
 build/
-# dist/ is needed for GitHub Pages, so don't ignore it
+export_credentials.cfg
+*.translation
 
 # Game-specific ignores
 saves/

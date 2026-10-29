@@ -1,93 +1,89 @@
 # Hopeless Catch
 
-A cozy fishing game with a dark secret.
+A cozy fishing game with a dark secret. This repository is the **Godot 4.7** source of truth, the fishing twin of [Sportsman's Quest](https://mungdaal321.itch.io/sportsman-quest) (hunting). Both games target **Godot 4.7** stable. Do not open this project in a later major or minor line.
 
 **[Play in the browser](https://mungdaal321.itch.io/hopeless-catch)** · [Robert Fernandez](https://robertfernandez.dev)
 
-![A pixel fisherman on a wooden dock, line in a blue lake, with mountains and a pale sun behind the clouds](Screenshots/Itch_io/Game.png)
+The itch page is still the live build. It can lag behind this tree until Robert publishes a new Godot export. This repo does not replace that page.
 
-You spend the day on the dock at Lake Acheron. Pick a bait, cast, wait on the bobber, and reel the fish in before the line snaps. The clock runs. Rest in the cabin and the next morning starts on the same pier, with different weather.
-
-The first screen is a content note for the [Horror Fishing Game Jam](https://itch.io/jam/the-fishing-horror-jam). The field journal keeps another line on every fish you land, and it tells you to leave the water past the red buoy alone after midnight.
-
-## How to play
-
-On the title menu, choose **Begin Fishing**. Up and Down, or W and S, move the cursor. Space or Enter selects. Space also skips the opening note.
-
-1. Hold **Space** to charge the cast. Release to throw. A longer hold drops the bobber farther out.
-2. Wait. Hold Space while the lure sits if you want it back.
-3. When the bobber dives, press **Space** to set the hook.
-4. Hold **Space** to reel. Release when line tension flashes danger. A full bar snaps the line.
-5. Space closes the catch card. Tab opens the journal, where the catch is written down.
-6. **H** rests in the cabin and starts the next day. Day one is clear. Later days bring rain, fog, and storms.
-
-| Action | Key |
-| --- | --- |
-| Walk the dock | A / D, or Left / Right |
-| Cast, hook, and reel | Space (Enter does the same) |
-| Bait box | B |
-| Field journal | Tab |
-| Rest in the cabin | H |
-| Pause | Esc |
-| Restart | F5 |
-
-The hint bar along the bottom says WASD. On the dock, left and right are what move you. W and S are for menus.
-
-The bait box starts with fat worms, sweet corn, live minnows, pungent cheese, and rotten offal. Click a compartment, or choose one with the arrow keys and Enter. Daylight fish include sunfish, bass, trout, catfish, and a rare golden carp. Some of them prefer a specific bait.
+You stand on a dock, pick a bait, charge a cast, and fight the fish on the line. The clock runs from day into night. The LÖVE game that used to live at the repo root is archived under [`archive/love2d/`](archive/love2d/README.md). Git history still has it.
 
 ## Run it
 
-**Browser.** [mungdaal321.itch.io/hopeless-catch](https://mungdaal321.itch.io/hopeless-catch). Click the game once so the keys and audio focus. The page lists the project as in development, with HTML5 and Windows builds. Fullscreen is the 16:9 view.
+Install [Godot 4.7.x stable](https://godotengine.org/download/archive/4.7-stable/) (4.7 through 4.7.2). `project.godot` sets `config/features` to `4.7` and Forward+. The main scene is `res://scenes/main_lake.tscn`.
 
-**LÖVE, from this repo.** `Love2d Version/HopelessCatch_Source/conf.lua` targets LÖVE 11.4 at 1280×720. The itch.io page recommends [LÖVE 11.5](https://love2d.org/). 11.4 and 11.5 both match this project:
-
-```bash
-cd "Love2d Version/HopelessCatch_Source"
-love .
-```
-
-The packaged game file is `Love2d Version/dist/love/HopelessCatch.love`. Open it with LÖVE, or from the repo root:
+Open this folder in the Godot 4.7 editor and press F5, or from the repo root:
 
 ```bash
-love "Love2d Version/dist/love/HopelessCatch.love"
+godot --path .
 ```
 
-**Windows, without installing LÖVE.** Run `Love2d Version/dist/windows/HopelessCatch.exe` from that folder, so it sits next to its DLLs. The same build is zipped at `Love2d Version/dist/HopelessCatch-Windows.zip`.
+The window is 1280×720. Click the view once so the mouse is captured. Esc releases it.
 
-**Earlier browser build in the repo.** `Love2d_Web/` is a separate 800×600 scene. From the repository root:
+| Action | Input |
+| --- | --- |
+| Look | Mouse (click the view first) |
+| Walk | W A S D |
+| Cast | Hold left-click, release to throw |
+| Set the hook | Left-click when the bite warning shows |
+| Reel | Hold right-click |
+| Baitcaster thumb brake | Hold Space while the lure is in the air |
+| Untangle a backlash | Tap Space |
+| Tackle box | B or Tab (only while idle or waiting on a bite) |
+| Flashlight | F |
+| PS1-style dither | P |
+| Reel discipline | 1 spinning, 2 baitcaster, 3 spincast, 4 fly (only while idle) |
+| Keep / release a catch | Left-click or Space keeps. Right-click releases. |
 
-```bash
-python3 Love2d_Web/serve.py
-```
+## Export
 
-Open [http://localhost:3000/](http://localhost:3000/) and click the canvas before using the keyboard. That server sends the `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers the WebAssembly build needs. GitHub Pages does not send those headers, so the playable page is the itch.io link above. Ctrl+C stops the server.
+Presets live in [`export_presets.cfg`](export_presets.cfg). Template paths are empty on purpose, so Godot uses the export templates installed for that editor. Do not commit a machine-local `custom_template` path.
 
-## What ships
+Install templates that match the editor (Editor → Manage Export Templates, or the 4.7.x `export_templates.tpz` from the same download page). Then, from the repo root:
+
+| Target | Preset name | Output | Command |
+| --- | --- | --- | --- |
+| Windows x86_64 | `Windows Desktop` | `build/windows/HopelessCatch.exe` | `godot --headless --export-release "Windows Desktop" build/windows/HopelessCatch.exe` |
+| Linux x86_64 | `Linux` | `build/linux/HopelessCatch.x86_64` | `godot --headless --export-release "Linux" build/linux/HopelessCatch.x86_64` |
+| macOS universal | `macOS` | `build/macos/HopelessCatch.zip` | `godot --headless --export-release "macOS" build/macos/HopelessCatch.zip` |
+| Web | `Web` | `build/web/index.html` | `godot --headless --export-release "Web" build/web/index.html` |
+
+`build/` is gitignored. Step-by-step notes, including why the web preset ships with threads off, are in [docs/EXPORTING.md](docs/EXPORTING.md).
+
+## What is in this tree
 
 | | |
 | --- | --- |
-| Playable today | Browser build on itch.io. A Windows `.exe` and a `.love` file are in this repo and on that page. |
-| Source | LÖVE / Lua in `Love2d Version/HopelessCatch_Source` |
-| macOS, Linux, Steam Deck | LÖVE with the source folder or the `.love` file. This repo has no separate app bundle for those systems. |
-| Status | In development, as listed on itch.io. The current source has the dock, cast, reel, journal, bait box, day and night cycle, and weather. |
-| Screenshots | `Screenshots/Itch_io/` is the dock game. `Screenshots/Love2D_Web/` is the earlier browser scene. |
+| Engine | Godot 4.7, Forward+ |
+| Playable scene | Dock, primitive water, cast, bite, reel, four reel disciplines, tackle box, day/night, flashlight |
+| Fish in the catalog | Sunfish, bass, trout, catfish, golden carp. Night cryptids are still commented out in `scripts/fish_database.gd`. |
+| Models used by the scene | `models/hands.glb`, `models/rocks.glb`, `models/tree.glb`. Fish glbs are spawned from script when a fish is hooked. |
+| Audio on disk | One chunk only. See blockers. |
+| Old LÖVE game | `archive/love2d/` |
 
-## Also on the dock
+## Art gaps (for the Game Art Director)
 
-![Title menu over a night lake, with Begin Fishing selected](Screenshots/Itch_io/StartMenu.png)
+No new art direction is proposed here. The playable scene is still mostly primitive meshes. Full paths and pixel sizes are in [docs/ART_GAPS.md](docs/ART_GAPS.md).
 
-![Tackle tray listing fat worms, sweet corn, live minnows, pungent cheese, and rotten offal](Screenshots/Itch_io/tacklebox.png)
+- Bait icons are 32×32 placeholders (`assets/bait/`, 334–431 bytes each).
+- Catch-card fish portraits are 64×64, except `assets/fish/fishman.png` at 128×128. They are a few kilobytes each.
+- `models/lake.glb` (4.5 MB) and `models/World.glb` (3.0 MB) are in the repo and are not instanced in `scenes/main_lake.tscn`. The dock, water, rod, and lure are a box, a plane, a cylinder, and a sphere.
+- The HUD uses the default Godot font. There is no title screen, content note, or field journal art. The LÖVE game had those. Screenshots of that build are in `archive/love2d/Screenshots/`.
 
-## Star
+## Blockers
 
-If you would send someone to this dock, star the repository. That is the whole ask.
+- **Audio is incomplete.** Chunk 1 is merged. The scripts look for `audio/sfx/whip.ogg`, `sfx_fish_bite_1.ogg`, `reel1.ogg`, `thrash.ogg`, `fighting_loop.ogg`, and `flapping.ogg`. Those files are not in this tree, and the game stays silent when they are missing. What did arrive is `audio/sfx/ambience_apartment_day_loop.ogg` (4.6 MB), `audio/sfx/ambience_apartment_night_loop.ogg` (5.8 MB), and `audio/sfx/weather/592482__baconation__medium-light-rain.mp3` (7.5 MB). The apartment loops are not playing, because they are interior beds and this scene is a lake. There is no rain system to use the rain file. More audio parts are still expected.
+- **Shore casts can stick.** A lure that lands on the mainland box never reaches the scripted water plane, so the state can sit on "lure in the air." That is the next fishing-loop fix.
+- **Line snap and a missed hook-set** return to idle with no lasting message.
+- **The fight does not change as the fish tires.** Stamina drains on the lure and does not yet change reel speed or tension.
+- **No shop.** Money is counted and nothing spends it.
+- **Cryptid fish** (pale crawler, bleeding carp, whispering eel, fishman) have portraits and are commented out on purpose in `scripts/fish_database.gd`.
+- **Web and desktop builds are not published.** Export locally with the table above. Do not upload over the live itch page from this repo.
 
-## License and credits
+## License
 
 [MIT](LICENSE). Copyright MungDaal321 / robfernan.
 
-[Robert Fernandez](https://robertfernandez.dev) ([robfernan](https://github.com/robfernan)). The itch.io page is published as [MungDaal321](https://mungdaal321.itch.io/hopeless-catch).
+[Robert Fernandez](https://robertfernandez.dev) ([robfernan](https://github.com/robfernan)). The itch page is [MungDaal321](https://mungdaal321.itch.io/hopeless-catch). The hunting twin is [Sportsman's Quest](https://mungdaal321.itch.io/sportsman-quest).
 
-Built with [LÖVE](https://love2d.org/). The itch.io page credits Aseprite for the pixel art. The in-repo browser port uses [love.js](https://github.com/Davidobot/love.js). Made for the [Horror Fishing Game Jam](https://itch.io/jam/the-fishing-horror-jam).
-
-Bugs and ideas: [CONTRIBUTING.md](CONTRIBUTING.md). Notes on the browser port: [Love2d_Web/README.md](Love2d_Web/README.md).
+Bugs and ideas: [CONTRIBUTING.md](CONTRIBUTING.md).
