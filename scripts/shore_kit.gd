@@ -10,6 +10,9 @@ func _ready() -> void:
 	_rock(Vector3(4.2, 0.95, 7.0), 0.8)
 	_rock(Vector3(12.0, 0.95, 8.5), 1.3)
 	_cabin(Vector3(-16.0, 0.92, 22.0))
+	_pumpkin(Vector3(-12.4, 0.92, 12.0))
+	_pumpkin(Vector3(2.2, 0.92, 9.5))
+	_pumpkin(Vector3(8.6, 0.92, 13.2))
 	_plank_seams.call_deferred()
 
 func _flat(hex: String) -> StandardMaterial3D:
@@ -74,6 +77,30 @@ func _cabin(origin: Vector3) -> void:
 	glow.emission_energy_multiplier = 0.6
 	window.material = glow
 	_add_mesh(root, window, Vector3(0, 1.35, 1.72), "Window")
+
+func _pumpkin(pos: Vector3) -> void:
+	var root := Node3D.new()
+	root.name = "Pumpkin"
+	root.position = pos
+	add_child(root)
+	var body := SphereMesh.new()
+	body.radius = 0.38
+	body.height = 0.62
+	body.radial_segments = 8
+	body.rings = 4
+	var skin := _flat("E07828")
+	skin.emission_enabled = true
+	skin.emission = Color("E07828")
+	skin.emission_energy_multiplier = 0.15
+	body.material = skin
+	_add_mesh(root, body, Vector3(0, 0.32, 0), "Body")
+	var stem := CylinderMesh.new()
+	stem.top_radius = 0.05
+	stem.bottom_radius = 0.07
+	stem.height = 0.16
+	stem.radial_segments = 5
+	stem.material = _flat("2A2018")
+	_add_mesh(root, stem, Vector3(0, 0.68, 0), "Stem")
 
 func _plank_seams() -> void:
 	var dock := get_parent().get_node_or_null("Dock")

@@ -74,12 +74,13 @@ var fly_cast_timer: float = 0.0
 # Tackle Box & Day/Night Cycle
 var tackle_box_open: bool = false
 var flashlight_on: bool = false
-var time_of_day: float = 0.35 # 0.0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset
+var time_of_day: float = 0.62 # late day, so dusk and the night bite arrive in one sitting
 var day_cycle_speed: float = 0.006 # cycle speed
 
 # Economy & Stats
 var player_money: float = 25.0
 var total_fish_caught: int = 0
+var catch_notes: PackedStringArray = []
 
 # Audio reel crank cooldown
 var reel_sound_timer: float = 0.0
@@ -127,6 +128,7 @@ func _ready() -> void:
 	_build_angler_blockout()
 	_style_rod_blockout()
 	_ensure_journal_stub()
+	_flash("Late day on the lake. After dark, worse things bite.", 4.5)
 	update_hud()
 
 func _init_audio_system() -> void:
@@ -156,6 +158,19 @@ func _init_audio_system() -> void:
 			player.stream = load(path)
 		else:
 			missing.append(path)
+	var bed_path := "res://audio/sfx/lake_ambience_v1.ogg"
+	if ResourceLoader.exists(bed_path):
+		var bed := AudioStreamPlayer.new()
+		bed.name = "LakeBed"
+		bed.bus = "Ambience"
+		var ogg: AudioStream = load(bed_path)
+		ogg = ogg.duplicate()
+		if ogg is AudioStreamOggVorbis:
+			(ogg as AudioStreamOggVorbis).loop = true
+		bed.stream = ogg
+		bed.volume_db = -10.0
+		add_child(bed)
+		bed.play()
 	if not missing.is_empty():
 		push_warning("Hopeless Catch SFX missing (left silent for Audio Lead): %s" % ", ".join(missing))
 
@@ -512,7 +527,7 @@ func _handle_fishing_logic(delta: float) -> void:
 		State.BITING:
 			bite_reaction_timer -= delta
 			if Input.is_action_just_pressed("cast_line"):
-				current_fish = FishDatabase.roll_random_fish(current_bait)
+				current_fish = FishDatabase.roll_random_fish(current_bait, _is_after_dark())
 				current_state = State.FIGHTING
 				line_tension = 30.0
 				next_breach_timer = randf_range(3.0, 6.0)
@@ -567,6 +582,7 @@ func _handle_fishing_logic(delta: float) -> void:
 				var reward: float = current_fish.get("weight", 1.0) * 2.5
 				player_money += reward
 				total_fish_caught += 1
+				_note_catch()
 				_finish_catch()
 			elif Input.is_action_just_pressed("reel_in"):
 				# Release fish: moral bonus
@@ -662,6 +678,7 @@ func _spawn_trophy_3d_pose(model_path: String) -> void:
 			inst.scale = Vector3(0.65, 0.65, 0.65)
 			inst.position = Vector3(0.0, 0.0, 0.0)
 			inst.rotation_degrees = Vector3(10.0, -35.0, 5.0)
+			_tint_fish_meshes(inst, current_fish.get("tint_hex", ""))
 			trophy_holder.add_child(inst)
 
 func _attach_fish_to_hook(model_path: String) -> void:
@@ -674,7 +691,26 @@ func _attach_fish_to_hook(model_path: String) -> void:
 			# Position fish hanging mouth-first from the lure
 			inst.position = Vector3(0.0, -0.4, 0.0)
 			inst.scale = Vector3(0.45, 0.45, 0.45)
+			_tint_fish_meshes(inst, current_fish.get("tint_hex", ""))
 			lure.add_child(inst)
+
+func _tint_fish_meshes(node: Node, hex: String) -> void:
+	if hex == "":
+		return
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).material_override = _flat_mat(hex)
+	for child in node.get_children():
+		_tint_fish_meshes(child, hex)
+
+func _note_catch() -> void:
+	var line := "%s  %.1f lb" % [current_fish.get("name", "Fish"), float(current_fish.get("weight", 0.0))]
+	catch_notes.append(line)
+	if catch_notes.size() > 8:
+		catch_notes.remove_at(0)
+	var panel := hud.get_node_or_null("JournalStub") if hud else null
+	var body := panel.get_node_or_null("JournalBody") as Label if panel else null
+	if body:
+		body.text = "\n".join(catch_notes)
 
 func _detach_fish_from_hook() -> void:
 	if lure:
@@ -956,7 +992,8 @@ func _ensure_journal_stub() -> void:
 	title.add_theme_color_override("font_color", Color("2A2018"))
 	panel.add_child(title)
 	var body := Label.new()
-	body.text = "Paper stub. Catch notes land here when Art delivers the journal sheet."
+	body.name = "JournalBody"
+	body.text = "Nothing kept yet. Day fish are ordinary. After dark, the journal changes."
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.position = Vector2(28, 78)
 	body.size = Vector2(364, 120)
@@ -997,6 +1034,17 @@ func _apply_lake_water_tint() -> void:
 		water.set_surface_override_material(0, _water_mat)
 	_water_mat.set_shader_parameter("surface_color", night_col.lerp(day_col, day_amount))
 	_water_mat.set_shader_parameter("depth_color", night_col)
+	if world_env and world_env.environment:
+		var env := world_env.environment
+		var dusk_fog := Color("1E4A52")
+		env.fog_light_color = night_col.lerp(dusk_fog, day_amount)
+		env.fog_density = lerpf(0.02, 0.008, day_amount)
+		var sky_mat := env.sky.sky_material as ProceduralSkyMaterial if env.sky else null
+		if sky_mat:
+			sky_mat.sky_top_color = night_col.lerp(dusk_fog, day_amount)
+			sky_mat.sky_horizon_color = dusk_fog.lerp(day_col, day_amount)
+			sky_mat.ground_bottom_color = night_col
+			sky_mat.ground_horizon_color = night_col.lerp(dusk_fog, day_amount)
 	const rain_path := "res://assets/vfx/rain_ripples.png"
 	if not _rain_foam_set and ResourceLoader.exists(rain_path):
 		_water_mat.set_shader_parameter("_foam", load(rain_path))
