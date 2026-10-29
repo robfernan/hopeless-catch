@@ -19,9 +19,10 @@ class BaitData:
 
 static var available_baits: Array[BaitData] = [
 	BaitData.new("worms", "Worms", "Classic wriggling earthworms. Good all-around bait, especially for Bass and Sunfish.", "res://assets/bait/worms.png", 1.0, "Bass, Sunfish"),
-	BaitData.new("minnows", "Minnows", "Live silvery minnows. Irresistible to aggressive predators like Bass and Trout.", "res://assets/bait/minnows.png", 1.25, "Bass, Trout"),
 	BaitData.new("corn", "Sweet Corn", "Bright sweet corn kernels. High attraction for Golden Carp and Trout.", "res://assets/bait/corn.png", 1.1, "Golden Carp, Trout"),
-	BaitData.new("cheese", "Stinky Cheese", "Pungent aged cheese cubes. Bottom-feeders like Catfish can smell it from afar.", "res://assets/bait/cheese.png", 1.15, "Catfish, Golden Carp")
+	BaitData.new("minnows", "Minnows", "Live silvery minnows. Irresistible to aggressive predators like Bass and Trout.", "res://assets/bait/minnows.png", 1.25, "Bass, Trout"),
+	BaitData.new("cheese", "Stinky Cheese", "Pungent aged cheese cubes. Bottom-feeders like Catfish can smell it from afar.", "res://assets/bait/cheese.png", 1.15, "Catfish, Golden Carp"),
+	BaitData.new("rotten_meat", "Rotten Offal", "Necrotic meat pulled from the tide. Attracts the unmentionable.", "res://assets/bait/rotten_meat.png", 1.8, "Catfish"),
 ]
 
 static func get_bait_by_id(bait_id: String) -> BaitData:

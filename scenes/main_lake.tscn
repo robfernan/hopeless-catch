@@ -9,6 +9,9 @@
 [ext_resource type="PackedScene" uid="uid://vqxq8pcojsbw" path="res://models/tree.glb" id="8_tree"]
 [ext_resource type="PackedScene" uid="uid://bv8yiv7yjenc5" path="res://models/hands.glb" id="9_hands"]
 [ext_resource type="Script" uid="uid://dfhp0uusvqjbb" path="res://scripts/minimap.gd" id="10_minimap"]
+[ext_resource type="PackedScene" uid="uid://dr8rf3iy7jhu" path="res://models/lake.glb" id="11_lake"]
+[ext_resource type="PackedScene" uid="uid://bh8p3uiah5hjt" path="res://models/World.glb" id="12_world"]
+[ext_resource type="Script" path="res://scripts/imported_dressing.gd" id="13_dressing"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.28, 0.48, 0.68, 1)
@@ -181,6 +184,13 @@ transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, -12, 1.2, 16)
 [node name="Tree2" parent="." unique_id=1180820566 instance=ExtResource("8_tree")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 11, 1.2, 18)
 
+[node name="LakeMesh" parent="." instance=ExtResource("11_lake")]
+script = ExtResource("13_dressing")
+
+[node name="WorldMesh" parent="." instance=ExtResource("12_world")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 3.3, 30)
+script = ExtResource("13_dressing")
+
 [node name="Lure" type="CharacterBody3D" parent="." unique_id=1321604827]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.8, -1.8)
 script = ExtResource("2_lure_script")
@@ -231,7 +241,7 @@ visible = false
 [node name="Flashlight" type="SpotLight3D" parent="Player/Camera3D" unique_id=1709683332]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.2)
 visible = false
-light_color = Color(1, 0.95, 0.85, 1)
+light_color = Color(0.878431, 0.470588, 0.156863, 1)
 light_energy = 2.5
 spot_range = 28.0
 spot_angle = 32.0

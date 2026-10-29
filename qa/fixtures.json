@@ -1,0 +1,118 @@
+{
+  "cut": "2026-10-29",
+  "status": "PENDING",
+  "note": "Schema only — no invented playthrough values. Fill when Godot Preview exists. Empty fixtures array is a pack defect; keep status PENDING until populated.",
+  "fixture_schema": {
+    "id": "string — stable fixture id, e.g. fx-hc-001",
+    "title": "string — short human label",
+    "applies_to_acs": ["AC-HC-001|AC-HC-002|AC-HC-003|AC-HC-004"],
+    "surface": "preview_web|desktop|either",
+    "input": {
+      "build_url_or_path": "string — Preview URL or Desktop export path (fill at run time)",
+      "control_claim": {
+        "keyboard_mouse": "boolean",
+        "gamepad": "boolean — false means AC-HC-002 is N/A for this fixture"
+      },
+      "platform": "web|windows|macos|linux|unspecified"
+    },
+    "expected": {
+      "core_loop_operable": "boolean — KB/M and/or gamepad per claim",
+      "web_focus_retains_input": "boolean|null — required when surface includes preview_web",
+      "desktop_boots_to_menu_or_playable": "boolean|null — required when surface includes desktop",
+      "crash_hang_blank": "boolean — must be false on PASS"
+    },
+    "notes": "string|null — non-invented constraints from Eng/PM only"
+  },
+  "fixtures": [
+    {
+      "id": null,
+      "title": null,
+      "applies_to_acs": ["AC-HC-001", "AC-HC-003"],
+      "surface": "preview_web",
+      "input": {
+        "build_url_or_path": null,
+        "control_claim": { "keyboard_mouse": null, "gamepad": null },
+        "platform": "web"
+      },
+      "expected": {
+        "core_loop_operable": null,
+        "web_focus_retains_input": null,
+        "desktop_boots_to_menu_or_playable": null,
+        "crash_hang_blank": null
+      },
+      "notes": "Shape A — WEB + KB/M focus path. Values TBD when Preview lands."
+    },
+    {
+      "id": null,
+      "title": null,
+      "applies_to_acs": ["AC-HC-001", "AC-HC-004"],
+      "surface": "desktop",
+      "input": {
+        "build_url_or_path": null,
+        "control_claim": { "keyboard_mouse": null, "gamepad": null },
+        "platform": "unspecified"
+      },
+      "expected": {
+        "core_loop_operable": null,
+        "web_focus_retains_input": null,
+        "desktop_boots_to_menu_or_playable": null,
+        "crash_hang_blank": null
+      },
+      "notes": "Shape B — Desktop boot + KB/M. Platform filled by Eng export claim."
+    },
+    {
+      "id": null,
+      "title": null,
+      "applies_to_acs": ["AC-HC-002", "AC-HC-001"],
+      "surface": "either",
+      "input": {
+        "build_url_or_path": null,
+        "control_claim": { "keyboard_mouse": null, "gamepad": true },
+        "platform": "unspecified"
+      },
+      "expected": {
+        "core_loop_operable": null,
+        "web_focus_retains_input": null,
+        "desktop_boots_to_menu_or_playable": null,
+        "crash_hang_blank": null
+      },
+      "notes": "Shape C — gamepad claimed. If build does not claim gamepad, drop or mark N/A — do not invent claim."
+    },
+    {
+      "id": null,
+      "title": null,
+      "applies_to_acs": ["AC-HC-003", "AC-HC-001"],
+      "surface": "preview_web",
+      "input": {
+        "build_url_or_path": null,
+        "control_claim": { "keyboard_mouse": null, "gamepad": null },
+        "platform": "web"
+      },
+      "expected": {
+        "core_loop_operable": null,
+        "web_focus_retains_input": null,
+        "desktop_boots_to_menu_or_playable": null,
+        "crash_hang_blank": null
+      },
+      "notes": "Shape D — WEB focus lose/regain specifically."
+    },
+    {
+      "id": null,
+      "title": null,
+      "applies_to_acs": ["AC-HC-004", "AC-HC-001", "AC-HC-002"],
+      "surface": "desktop",
+      "input": {
+        "build_url_or_path": null,
+        "control_claim": { "keyboard_mouse": null, "gamepad": null },
+        "platform": "unspecified"
+      },
+      "expected": {
+        "core_loop_operable": null,
+        "web_focus_retains_input": null,
+        "desktop_boots_to_menu_or_playable": null,
+        "crash_hang_blank": null
+      },
+      "notes": "Shape E — Desktop full control claim check (KB/M + gamepad if claimed)."
+    }
+  ]
+}

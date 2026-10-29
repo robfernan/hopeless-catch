@@ -35,6 +35,8 @@ The window is 1280×720. Click the view once so the mouse is captured. Esc relea
 | Reel discipline | 1 spinning, 2 baitcaster, 3 spincast, 4 fly (only while idle) |
 | Keep / release a catch | Left-click or Space keeps. Right-click releases. |
 
+Gamepad is claimed for this build. Left stick or the d-pad walks. South button casts and sets the hook. Right trigger reels. Left trigger is the thumb brake. North button opens the tackle box.
+
 ## Export
 
 Presets live in [`export_presets.cfg`](export_presets.cfg). Template paths are empty on purpose, so Godot uses the export templates installed for that editor. Do not commit a machine-local `custom_template` path.
@@ -65,17 +67,16 @@ Install templates that match the editor (Editor → Manage Export Templates, or 
 
 No new art direction is proposed here. The playable scene is still mostly primitive meshes. Full paths and pixel sizes are in [docs/ART_GAPS.md](docs/ART_GAPS.md).
 
-- Bait icons are 32×32 placeholders (`assets/bait/`, 334–431 bytes each).
+- P0 sheets from `art/hc-p0-dropins` are in `assets/` and wired: splash, tackle box, HUD bar, rotten offal. Bait icons besides offal are still 32×32 (`assets/bait/`, 334–431 bytes).
 - Catch-card fish portraits are 64×64, except `assets/fish/fishman.png` at 128×128. They are a few kilobytes each.
-- `models/lake.glb` (4.5 MB) and `models/World.glb` (3.0 MB) are in the repo and are not instanced in `scenes/main_lake.tscn`. The dock, water, rod, and lure are a box, a plane, a cylinder, and a sphere.
+- `models/lake.glb` and `models/World.glb` are instanced in `scenes/main_lake.tscn`. Their imported collision is off so the dock and the water-height test still own play. The dock, water, rod, and lure primitives are still there. `World.glb` is the store mesh, placed on the shore. There is no `models/dock.glb`.
 - The HUD uses the default Godot font. There is no title screen, content note, or field journal art. The LÖVE game had those. Screenshots of that build are in `archive/love2d/Screenshots/`.
 
 ## Blockers
 
-- **Audio is incomplete.** Chunk 1 is merged. The scripts look for `audio/sfx/whip.ogg`, `sfx_fish_bite_1.ogg`, `reel1.ogg`, `thrash.ogg`, `fighting_loop.ogg`, and `flapping.ogg`. Those files are not in this tree, and the game stays silent when they are missing. What did arrive is `audio/sfx/ambience_apartment_day_loop.ogg` (4.6 MB), `audio/sfx/ambience_apartment_night_loop.ogg` (5.8 MB), and `audio/sfx/weather/592482__baconation__medium-light-rain.mp3` (7.5 MB). The apartment loops are not playing, because they are interior beds and this scene is a lake. There is no rain system to use the rain file. More audio parts are still expected.
-- **Shore casts can stick.** A lure that lands on the mainland box never reaches the scripted water plane, so the state can sit on "lure in the air." That is the next fishing-loop fix.
-- **Line snap and a missed hook-set** return to idle with no lasting message.
-- **The fight does not change as the fish tires.** Stamina drains on the lure and does not yet change reel speed or tension.
+- **Audio files are still missing.** Buses are Master, Music, Ambience, SFX, and UI. Gameplay players sit on SFX and stay silent until these files exist: `audio/sfx/whip.ogg`, `sfx_fish_bite_1.ogg`, `reel1.ogg`, `thrash.ogg`, `fighting_loop.ogg`, `flapping.ogg`. Nothing was synthesized to fill them. `ambience_apartment_day_loop.ogg` and `ambience_apartment_night_loop.ogg` are not used as the lake bed. Web audio waits for a click or key, and losing window focus mutes Master.
+- **Shore casts** can be reeled back. A missed hook and a snapped line leave a message. Fish stamina changes how hard the line pulls and how fast it comes in.
+- **P1 art slots** are listed in `assets/ART_P1_SLOTS.md`. Those files were not invented. `models/bobber.glb` and `models/buoy_red.glb` are not in the tree.
 - **No shop.** Money is counted and nothing spends it.
 - **Cryptid fish** (pale crawler, bleeding carp, whispering eel, fishman) have portraits and are commented out on purpose in `scripts/fish_database.gd`.
 - **Web and desktop builds are not published.** Export locally with the table above. Do not upload over the live itch page from this repo.

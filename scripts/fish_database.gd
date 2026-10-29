@@ -26,7 +26,7 @@ static var catalog: Array[FishData] = [
 	FishData.new("Sunfish", "A small, peaceful fish that glints in the sunlight.", "Common", 1, 0.3, 1.2, "res://assets/fish/sunfish.png", "res://models/fish/bluegill.glb", ["Worms", "Corn"]),
 	FishData.new("Bass", "A common freshwater game fish with an aggressive strike.", "Common", 2, 1.5, 6.5, "res://assets/fish/bass.png", "res://models/fish/large_mouth_bass.glb", ["Minnows", "Worms"]),
 	FishData.new("Trout", "A beautiful freshwater river fish with speckled sides.", "Uncommon", 2, 1.0, 4.2, "res://assets/fish/trout.png", "res://models/fish/rainbow_trout.glb", ["Corn", "Minnows"]),
-	FishData.new("Catfish", "A heavy bottom feeder with whiskers and a strong pull.", "Uncommon", 3, 3.0, 15.0, "res://assets/fish/catfish.png", "res://models/fish/catfish.glb", ["Cheese", "Worms"]),
+	FishData.new("Catfish", "A heavy bottom feeder with whiskers and a strong pull.", "Uncommon", 3, 3.0, 15.0, "res://assets/fish/catfish.png", "res://models/fish/catfish.glb", ["Cheese", "Worms", "Rotten Offal"]),
 	FishData.new("Golden Carp", "A rare, shimmering golden carp said to bring good fortune.", "Rare", 4, 4.5, 12.0, "res://assets/fish/golden_carp.png", "res://models/fish/Carp.glb", ["Corn", "Cheese"]),
 
 	# =========================================================================
