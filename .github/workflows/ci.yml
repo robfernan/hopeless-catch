@@ -7,88 +7,89 @@ on:
     branches: [ main ]
 
 jobs:
-  web-version-check:
+  godot-project-check:
     runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Check HTML file exists
-      run: |
-        if [ ! -f "Love2d_Web/index.html" ]; then
-          echo "Error: index.html not found"
-          exit 1
-        fi
-        echo "✓ HTML file exists"
-        
-    - name: Check JavaScript files exist
-      run: |
-        if [ ! -d "Love2d_Web/src" ]; then
-          echo "Error: src directory not found"
-          exit 1
-        fi
-        echo "✓ JavaScript source directory exists"
-        
-    - name: Check assets exist
-      run: |
-        if [ ! -d "Love2d_Web/assets" ]; then
-          echo "Error: assets directory not found"
-          exit 1
-        fi
-        echo "✓ Assets directory exists"
 
-  love2d-version-check:
-    runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Check Love2D files exist
+
+    - name: Check Godot 4.7 project root
       run: |
-        if [ ! -f "Love2d Version/HopelessCatch.love" ]; then
-          echo "Error: HopelessCatch.love file not found"
+        if [ ! -f project.godot ]; then
+          echo "Error: project.godot is not at the repo root"
           exit 1
         fi
-        
-        if [ ! -d "Love2d Version/HopelessCatch_Source" ]; then
-          echo "Error: Source directory not found"
+        if ! grep -q 'PackedStringArray("4.7"' project.godot; then
+          echo "Error: project.godot is not pinned to Godot 4.7"
           exit 1
         fi
-        
-        echo "Love2D version check passed"
-        
-    - name: Check Lua syntax (basic)
+        if grep -q 'PackedStringArray("4.8"' project.godot || grep -q 'PackedStringArray("4.6"' project.godot; then
+          echo "Error: project.godot feature line is not 4.7"
+          exit 1
+        fi
+        if ! grep -q 'res://scenes/main_lake.tscn' project.godot; then
+          echo "Error: main scene is not res://scenes/main_lake.tscn"
+          exit 1
+        fi
+        for f in scenes/main_lake.tscn scripts/player_controller.gd scripts/lure.gd scripts/fish_database.gd export_presets.cfg README.md docs/EXPORTING.md docs/ART_GAPS.md; do
+          if [ ! -f "$f" ]; then
+            echo "Error: missing $f"
+            exit 1
+          fi
+        done
+        if grep -E 'custom_template/(debug|release)="/' export_presets.cfg; then
+          echo "Error: export preset contains an absolute custom template path"
+          exit 1
+        fi
+        echo "Godot 4.7 project check passed"
+
+  love2d-archive-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check the LÖVE tree was archived, not deleted
       run: |
-        cd "Love2d Version/HopelessCatch_Source"
-        # Check if main.lua exists
-        if [ ! -f "main.lua" ]; then
-          echo "Error: main.lua not found"
+        required=(
+          "archive/love2d/README.md"
+          "archive/love2d/Love2dVersion/HopelessCatch.love"
+          "archive/love2d/Love2dVersion/HopelessCatch_Source/main.lua"
+          "archive/love2d/Love2d_Web/index.html"
+          "archive/love2d/Love2d_Web/README.md"
+          "archive/love2d/pages/index.html"
+        )
+        for file in "${required[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "Error: archived file missing: $file"
+            exit 1
+          fi
+        done
+        if [ -d "Love2d Version" ] || [ -d "Love2d_Web" ]; then
+          echo "Error: LÖVE folders are still at the repo root"
           exit 1
         fi
-        
-        echo "Lua files check passed"
+        echo "LÖVE archive check passed"
 
   documentation-check:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Check required documentation
       run: |
         required_files=(
           "README.md"
           "LICENSE"
           "CONTRIBUTING.md"
-          "Love2d_Web/README.md"
-          "Love2d_Web/DEVELOPMENT_GUIDE.md"
+          "docs/EXPORTING.md"
+          "docs/ART_GAPS.md"
         )
-        
         for file in "${required_files[@]}"; do
           if [ ! -f "$file" ]; then
             echo "Error: Required file $file not found"
             exit 1
           fi
         done
-        
-        echo "✓ All required documentation files present"
+        echo "Documentation check passed"

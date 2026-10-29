@@ -1,0 +1,21 @@
+[gd_resource type="ShaderMaterial" format=3 uid="uid://bcbp2mmd8j2d5"]
+
+[ext_resource type="Shader" uid="uid://ct75xsmi2ijfo" path="res://shaders/about_fishing_water.gdshader" id="1"]
+[ext_resource type="Texture2D" uid="uid://bk32xth7uqfvj" path="res://materials/waternoise.tres" id="2"]
+
+[resource]
+render_priority = 2
+shader = ExtResource("1")
+shader_parameter/normal_speed = 0.171
+shader_parameter/surface_color = Color(0.211765, 0.603922, 0.439216, 1)
+shader_parameter/depth_color = Color(0.576471, 0.752941, 0.92549, 1)
+shader_parameter/emission_color = Color(0.132538, 0.167969, 0.167969, 1)
+shader_parameter/opacity = 0.614
+shader_parameter/normal_map = ExtResource("2")
+shader_parameter/normal_scale = -3.616
+shader_parameter/beer_factor = 0.886
+shader_parameter/_roughness = 0.491
+shader_parameter/_refraction = 0.0
+shader_parameter/_uv_scale = 0.056
+shader_parameter/_foam_strength = 0.094
+shader_parameter/_foam_size = 0.276

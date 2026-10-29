@@ -1,68 +1,21 @@
 # Contributing to Hopeless Catch
 
-Thank you for your interest in contributing to Hopeless Catch! This document provides guidelines and instructions for contributing to the project.
+The game at the repository root is a Godot 4.7 project. The LÖVE sources are archived under `archive/love2d/` and are not the active target.
 
-## Project Structure
+## Setup
 
-The project contains two primary targets for the Hopeless Catch fishing horror game:
+1. Install Godot 4.7.x stable. Do not use 4.6 or 4.8 for this repo.
+2. Open the repository root (`project.godot`) and run the main scene, `scenes/main_lake.tscn`.
+3. Export notes are in `docs/EXPORTING.md`. Leave `custom_template` paths empty in `export_presets.cfg`.
 
-- **Love2d Version/** - Original LÖVE 2D desktop game (Lua)
-- **Love2d_Web/** - WebAssembly port compiled with love.js
+## Making a change
 
-## Getting Started
+1. Branch from `main`.
+2. Keep `config/features` on `4.7`.
+3. Play the cast, bite, and reel loop in the editor before opening a pull request.
+4. If you add or remove art, update `docs/ART_GAPS.md` with the path and the file size. Do not invent a new art direction in code comments.
+5. Do not publish over the live itch page from a pull request. That upload is Robert's.
 
-### For LÖVE 2D Development (Desktop)
-1. Install LÖVE 2D from https://love2d.org/
-2. Navigate to `Love2d Version/HopelessCatch_Source/`
-3. Run: `love .`
+## Reporting issues
 
-### For Web Development
-1. Navigate to `Love2d_Web/`
-2. Run the local server: `python3 serve.py`
-3. Open `http://localhost:3000/` in your browser
-
-For building web bundles or deploying with Butler/itch.io, refer to `Love2d_Web/DEVELOPMENT_GUIDE.md` and `Love2d_Web/ITCH_IO_GUIDE.md`.
-
-## Making Changes
-
-1. Create a new branch for your feature: `git checkout -b feature/your-feature-name`
-2. Make your changes
-3. Test thoroughly in the appropriate environment
-4. Commit with clear messages: `git commit -m "Add feature: description"`
-5. Push to your branch: `git push origin feature/your-feature-name`
-6. Open a pull request with a description of your changes
-
-## Code Style
-
-- **Lua**: Follow LÖVE 2D conventions
-- **Web / JS**: Keep love.js integration and packaging scripts clean and minimal
-
-## Testing
-
-Before submitting a pull request:
-- Test your changes in the appropriate environment
-- Verify no existing functionality is broken
-- Test on multiple browsers for web versions
-- Check for console errors and warnings
-
-## Reporting Issues
-
-If you find a bug or have a suggestion:
-1. Check existing issues to avoid duplicates
-2. Provide a clear description of the issue
-3. Include steps to reproduce (for bugs)
-4. Mention your environment (OS, browser, etc.)
-
-## Documentation
-
-- Update relevant README files when adding features
-- Add comments to complex code sections
-- Keep documentation in sync with code changes
-
-## License
-
-By contributing to this project, you agree that your contributions will be licensed under the same license as the project (see LICENSE file).
-
-## Questions?
-
-Feel free to open an issue or discussion if you have questions about contributing.
+Include the Godot version, the platform, and the fishing state you were in (idle, charging, waiting, biting, fighting, caught). Audio files beyond the first chunk may still be missing. Check the README blockers before filing a silence bug.

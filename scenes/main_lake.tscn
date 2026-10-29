@@ -1,0 +1,557 @@
+[gd_scene format=3 uid="uid://c8372a46hga20"]
+
+[ext_resource type="Script" uid="uid://da4qbc6l0hwse" path="res://scripts/lure.gd" id="2_lure_script"]
+[ext_resource type="Script" uid="uid://cifc4071v4qnf" path="res://scripts/fishing_line.gd" id="3_line_script"]
+[ext_resource type="Script" uid="uid://byyx37f7wnfdp" path="res://scripts/player_controller.gd" id="4_player_script"]
+[ext_resource type="Shader" uid="uid://g8ky7ng0v357" path="res://shaders/dither.gdshader" id="5_dither_shader"]
+[ext_resource type="Material" uid="uid://bcbp2mmd8j2d5" path="res://materials/about_fishing_water.tres" id="6_about_water"]
+[ext_resource type="PackedScene" uid="uid://bqg4exisw4t3f" path="res://models/rocks.glb" id="7_rocks"]
+[ext_resource type="PackedScene" uid="uid://vqxq8pcojsbw" path="res://models/tree.glb" id="8_tree"]
+[ext_resource type="PackedScene" uid="uid://bv8yiv7yjenc5" path="res://models/hands.glb" id="9_hands"]
+[ext_resource type="Script" uid="uid://dfhp0uusvqjbb" path="res://scripts/minimap.gd" id="10_minimap"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.28, 0.48, 0.68, 1)
+sky_horizon_color = Color(0.78, 0.72, 0.65, 1)
+ground_bottom_color = Color(0.15, 0.18, 0.2, 1)
+ground_horizon_color = Color(0.65, 0.6, 0.55, 1)
+
+[sub_resource type="Sky" id="Sky_env"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_env")
+ambient_light_source = 3
+reflected_light_source = 2
+tonemap_mode = 3
+glow_enabled = true
+fog_enabled = true
+fog_light_color = Color(0.65, 0.74, 0.78, 1)
+fog_density = 0.005
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_water"]
+material = ExtResource("6_about_water")
+size = Vector2(300, 300)
+subdivide_width = 64
+subdivide_depth = 64
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lakebed"]
+albedo_color = Color(0.09, 0.16, 0.13, 1)
+roughness = 0.95
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_lakebed"]
+material = SubResource("StandardMaterial3D_lakebed")
+size = Vector2(350, 350)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sand"]
+albedo_color = Color(0.72, 0.65, 0.52, 1)
+roughness = 0.92
+
+[sub_resource type="BoxMesh" id="BoxMesh_mainland"]
+material = SubResource("StandardMaterial3D_sand")
+size = Vector3(160, 2.5, 90)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mainland"]
+size = Vector3(160, 2.5, 90)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock"]
+albedo_color = Color(0.38, 0.29, 0.22, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_dock"]
+material = SubResource("StandardMaterial3D_dock")
+size = Vector3(3.5, 0.35, 16)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dock_col"]
+size = Vector3(3.5, 0.35, 16)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_piling"]
+material = SubResource("StandardMaterial3D_dock")
+top_radius = 0.15
+bottom_radius = 0.15
+height = 3.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_lure"]
+radius = 0.15
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lure"]
+albedo_color = Color(0.95, 0.2, 0.15, 1)
+roughness = 0.3
+
+[sub_resource type="SphereMesh" id="SphereMesh_lure"]
+material = SubResource("StandardMaterial3D_lure")
+radius = 0.12
+height = 0.24
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rod"]
+albedo_color = Color(0.12, 0.14, 0.16, 1)
+metallic = 0.85
+roughness = 0.25
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_rod"]
+material = SubResource("StandardMaterial3D_rod")
+top_radius = 0.012
+bottom_radius = 0.035
+height = 2.4
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cork"]
+albedo_color = Color(0.76, 0.62, 0.45, 1)
+roughness = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_cork"]
+material = SubResource("StandardMaterial3D_cork")
+top_radius = 0.04
+bottom_radius = 0.04
+height = 0.65
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_dither"]
+shader = ExtResource("5_dither_shader")
+shader_parameter/enabled = true
+shader_parameter/target_width = 480.0
+shader_parameter/color_depth = 8.0
+shader_parameter/dither_strength = 0.008
+
+[node name="MainLake" type="Node3D" unique_id=946389721]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1271008321]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1833448577]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 15, 0)
+light_color = Color(1, 0.94, 0.86, 1)
+light_energy = 1.15
+shadow_enabled = true
+
+[node name="WaterPlane" type="MeshInstance3D" parent="." unique_id=1354663038]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.49586868, 0, -100.27089)
+mesh = SubResource("PlaneMesh_water")
+
+[node name="LakeBed" type="MeshInstance3D" parent="." unique_id=1278789106]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.5, -100)
+mesh = SubResource("PlaneMesh_lakebed")
+
+[node name="MainlandCoast" type="StaticBody3D" parent="." unique_id=15803900]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.325, 46)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="MainlandCoast" unique_id=504947346]
+mesh = SubResource("BoxMesh_mainland")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="MainlandCoast" unique_id=88087591]
+shape = SubResource("BoxShape3D_mainland")
+
+[node name="Dock" type="StaticBody3D" parent="." unique_id=1408530617]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -2)
+
+[node name="Planks" type="MeshInstance3D" parent="Dock" unique_id=1627598165]
+mesh = SubResource("BoxMesh_dock")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Dock" unique_id=43738891]
+shape = SubResource("BoxShape3D_dock_col")
+
+[node name="Piling1" type="MeshInstance3D" parent="Dock" unique_id=1789100408]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, -1.2, -5.5)
+mesh = SubResource("CylinderMesh_piling")
+
+[node name="Piling2" type="MeshInstance3D" parent="Dock" unique_id=2017393233]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, -1.2, -5.5)
+mesh = SubResource("CylinderMesh_piling")
+
+[node name="Piling3" type="MeshInstance3D" parent="Dock" unique_id=1881386714]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, -1.2, 1.5)
+mesh = SubResource("CylinderMesh_piling")
+
+[node name="Piling4" type="MeshInstance3D" parent="Dock" unique_id=831355343]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, -1.2, 1.5)
+mesh = SubResource("CylinderMesh_piling")
+
+[node name="RocksLeft" parent="." unique_id=1978281992 instance=ExtResource("7_rocks")]
+transform = Transform3D(1.8, 0, 0, 0, 1.8, 0, 0, 0, 1.8, -9, 0.1, 4)
+
+[node name="RocksRight" parent="." unique_id=147783311 instance=ExtResource("7_rocks")]
+transform = Transform3D(2.2, 0, 0, 0, 2.2, 0, 0, 0, 2.2, 8, 0.1, 6)
+
+[node name="Tree1" parent="." unique_id=1857208027 instance=ExtResource("8_tree")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, -12, 1.2, 16)
+
+[node name="Tree2" parent="." unique_id=1180820566 instance=ExtResource("8_tree")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 11, 1.2, 18)
+
+[node name="Lure" type="CharacterBody3D" parent="." unique_id=1321604827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.8, -1.8)
+script = ExtResource("2_lure_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Lure" unique_id=1445233153]
+shape = SubResource("SphereShape3D_lure")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Lure" unique_id=1481424424]
+mesh = SubResource("SphereMesh_lure")
+
+[node name="FishingLine" type="MeshInstance3D" parent="." unique_id=1876448782 node_paths=PackedStringArray("rod_tip", "lure")]
+script = ExtResource("3_line_script")
+rod_tip = NodePath("../Player/Camera3D/RodPivot/RodMesh/RodTip")
+lure = NodePath("../Lure")
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=1896442182]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+script = ExtResource("4_player_script")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1382604137]
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Camera3D" type="Camera3D" parent="Player" unique_id=1030295950]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0)
+current = true
+
+[node name="RodPivot" type="Node3D" parent="Player/Camera3D" unique_id=520572257]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, -0.3, -0.45)
+
+[node name="RodMesh" type="MeshInstance3D" parent="Player/Camera3D/RodPivot" unique_id=1272919363]
+transform = Transform3D(1, 0, 0, 0, 0.642788, 0.766044, 0, -0.766044, 0.642788, 0, 0.75, -0.7)
+mesh = SubResource("CylinderMesh_rod")
+
+[node name="CorkHandle" type="MeshInstance3D" parent="Player/Camera3D/RodPivot/RodMesh" unique_id=1868675670]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.85, 0)
+mesh = SubResource("CylinderMesh_cork")
+
+[node name="RodTip" type="Marker3D" parent="Player/Camera3D/RodPivot/RodMesh" unique_id=170674314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+
+[node name="Hands" parent="Player/Camera3D/RodPivot" unique_id=1093516949 instance=ExtResource("9_hands")]
+transform = Transform3D(0.4, 0, 0, 0, 0.35, 0.2, 0, -0.2, 0.35, -0.05, -0.15, 0.1)
+
+[node name="TrophyHolder" type="Node3D" parent="Player/Camera3D" unique_id=356750383]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.15, -0.9)
+visible = false
+
+[node name="Flashlight" type="SpotLight3D" parent="Player/Camera3D" unique_id=1709683332]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.2)
+visible = false
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 2.5
+spot_range = 28.0
+spot_angle = 32.0
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1755314066]
+
+[node name="RetroPostProcess" type="ColorRect" parent="HUD" unique_id=1050794507]
+material = SubResource("ShaderMaterial_dither")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Crosshair" type="ColorRect" parent="HUD" unique_id=815867531]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0.75)
+
+[node name="DisciplineLabel" type="Label" parent="HUD" unique_id=1831982451]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 650.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 20
+text = "Setup: [ Spinning Reel ] (Keys 1-4) | [P] Retro PS1: ON"
+
+[node name="StatusLabel" type="Label" parent="HUD" unique_id=1221516392]
+offset_left = 24.0
+offset_top = 58.0
+offset_right = 650.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.85, 0.95, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "Left-Click: Cast | WASD: Move"
+
+[node name="CastPowerBar" type="ProgressBar" parent="HUD" unique_id=358261127]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -70.0
+offset_right = 160.0
+offset_bottom = -46.0
+grow_horizontal = 2
+grow_vertical = 0
+value = 45.0
+show_percentage = false
+
+[node name="WarningLabel" type="Label" parent="HUD" unique_id=623033334]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -120.0
+offset_right = 300.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.25, 0.2, 1)
+theme_override_font_sizes/font_size = 22
+text = "⚠️ THUMB BRAKE (SPACEBAR) OR YOU WILL BIRDS-NEST!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Minimap" type="Control" parent="HUD" unique_id=2111316041 node_paths=PackedStringArray("player", "lure")]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -160.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 160.0
+grow_horizontal = 0
+script = ExtResource("10_minimap")
+player = NodePath("../../Player")
+lure = NodePath("../../Lure")
+
+[node name="MinimapLabel" type="Label" parent="HUD/Minimap" unique_id=863131089]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -2.0
+offset_right = 60.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.7, 0.85, 0.9, 0.9)
+theme_override_font_sizes/font_size = 11
+text = "RADAR / SONAR"
+horizontal_alignment = 1
+
+[node name="TensionBar" type="ProgressBar" parent="HUD" unique_id=992851818]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -105.0
+offset_right = 160.0
+offset_bottom = -82.0
+grow_horizontal = 2
+grow_vertical = 0
+value = 50.0
+
+[node name="CatchCard" type="Panel" parent="HUD" unique_id=850336225]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -190.0
+offset_top = -150.0
+offset_right = 190.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CardTitle" type="Label" parent="HUD/CatchCard" unique_id=437978762]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -140.0
+offset_top = 12.0
+offset_right = 140.0
+offset_bottom = 36.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 18
+text = "★ NEW CATCH! ★"
+horizontal_alignment = 1
+
+[node name="FishImage" type="TextureRect" parent="HUD/CatchCard" unique_id=1288462079]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = -85.0
+offset_right = 80.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FishName" type="Label" parent="HUD/CatchCard" unique_id=1333162623]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = 15.0
+offset_right = 160.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+text = "Bleeding Carp"
+horizontal_alignment = 1
+
+[node name="FishStats" type="Label" parent="HUD/CatchCard" unique_id=909326701]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = 40.0
+offset_right = 160.0
+offset_bottom = 62.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.85, 0.95, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "Weight: 8.5 lbs | Rarity: Rare"
+horizontal_alignment = 1
+
+[node name="FishDesc" type="Label" parent="HUD/CatchCard" unique_id=1612675937]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = 66.0
+offset_right = 170.0
+offset_bottom = 105.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.75, 0.82, 0.85, 1)
+theme_override_font_sizes/font_size = 11
+text = "An unusual carp with strange, pulsing crimson markings."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="PromptLabel" type="Label" parent="HUD/CatchCard" unique_id=1343282711]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -140.0
+offset_top = -30.0
+offset_right = 140.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "[ Press SPACEBAR to Keep ]"
+horizontal_alignment = 1
+
+[node name="TackleBoxUI" type="Panel" parent="HUD" unique_id=1157514105]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -140.0
+offset_right = 220.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="HUD/TackleBoxUI" unique_id=1989118942]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -160.0
+offset_top = 10.0
+offset_right = 160.0
+offset_bottom = 35.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 16
+text = "★ TACKLE BOX - SELECT BAIT ★"
+horizontal_alignment = 1
+
+[node name="BaitContainer" type="HBoxContainer" parent="HUD/TackleBoxUI" unique_id=764885189]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+alignment = 1
+
+[node name="BaitDesc" type="Label" parent="HUD/TackleBoxUI" unique_id=297483875]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -190.0
+offset_top = -65.0
+offset_right = 190.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.8, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "Select a bait to attach to your hook. Different baits attract different species!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="CloseHelp" type="Label" parent="HUD/TackleBoxUI" unique_id=1942149767]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -25.0
+offset_right = 150.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "[ Press B or TAB to close ]"
+horizontal_alignment = 1
