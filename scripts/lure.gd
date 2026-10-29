@@ -27,13 +27,31 @@ var flight_time: float = 0.0
 var grounded_time: float = 0.0
 var bite_dip: float = 0.0
 
+const BOBBER_GLB := "res://models/bobber.glb"
+
 func _ready() -> void:
 	var mesh_node := get_node_or_null("MeshInstance3D") as MeshInstance3D
-	if mesh_node:
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color("F0C060")
-		mat.roughness = 0.4
-		mesh_node.material_override = mat
+	if ResourceLoader.exists(BOBBER_GLB):
+		var packed: PackedScene = load(BOBBER_GLB)
+		if packed:
+			var bobber := packed.instantiate()
+			bobber.name = "BobberMesh"
+			add_child(bobber)
+			if mesh_node:
+				mesh_node.visible = false
+			return
+	if mesh_node == null:
+		return
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.12
+	sphere.height = 0.24
+	sphere.radial_segments = 16
+	sphere.rings = 8
+	mesh_node.mesh = sphere
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("F0C060")
+	mat.roughness = 0.45
+	mesh_node.material_override = mat
 
 func launch(start_pos: Vector3, launch_velocity: Vector3) -> void:
 	global_position = start_pos

@@ -106,6 +106,7 @@ var sfx_flap: AudioStreamPlayer
 
 var pitch: float = 0.0
 var retro_shader_enabled: bool = true
+var _water_mat: ShaderMaterial
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -120,6 +121,8 @@ func _ready() -> void:
 	
 	_setup_tackle_box_ui()
 	_wire_hud_sheet()
+	_style_catch_card()
+	_ensure_buoy_placeholder.call_deferred()
 	update_hud()
 
 func _init_audio_system() -> void:
@@ -387,6 +390,7 @@ func _handle_day_night_cycle(delta: float) -> void:
 			# Night
 			sun_light.light_energy = 0.08
 			sun_light.light_color = Color(0.2, 0.3, 0.5, 1.0)
+	_apply_lake_water_tint()
 
 func _handle_movement(delta: float) -> void:
 	if global_position.y < -1.0:
@@ -851,6 +855,86 @@ func update_hud() -> void:
 				fish_img.texture = load(current_fish.get("texture_path"))
 		else:
 			catch_card.visible = false
+
+func _apply_lake_water_tint() -> void:
+	var day_amount := 0.0
+	if time_of_day > 0.2 and time_of_day < 0.7:
+		day_amount = 1.0
+	elif time_of_day >= 0.7 and time_of_day < 0.8:
+		day_amount = 1.0 - (time_of_day - 0.7) / 0.1
+	elif time_of_day >= 0.15 and time_of_day <= 0.2:
+		day_amount = (time_of_day - 0.15) / 0.05
+	var day_col := Color("65ACB2")
+	var night_col := Color("122E36")
+	if _water_mat == null:
+		var water := get_node_or_null("../WaterPlane") as MeshInstance3D
+		if water == null:
+			return
+		var source := water.get_active_material(0) as ShaderMaterial
+		if source == null:
+			return
+		_water_mat = source.duplicate() as ShaderMaterial
+		water.set_surface_override_material(0, _water_mat)
+	_water_mat.set_shader_parameter("surface_color", night_col.lerp(day_col, day_amount))
+	_water_mat.set_shader_parameter("depth_color", night_col)
+
+func _style_catch_card() -> void:
+	var card := hud.get_node_or_null("CatchCard") as Panel
+	if card == null:
+		return
+	const card_path := "res://assets/ui/catch_card.png"
+	card.offset_left = -210.0
+	card.offset_right = 210.0
+	card.offset_top = -260.0
+	card.offset_bottom = 260.0
+	if ResourceLoader.exists(card_path):
+		var style := StyleBoxTexture.new()
+		style.texture = load(card_path)
+		card.add_theme_stylebox_override("panel", style)
+	else:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color("2A2018")
+		box.border_color = Color("B8A090")
+		box.set_border_width_all(3)
+		card.add_theme_stylebox_override("panel", box)
+		for label_name in ["CardTitle", "FishName", "FishStats", "FishDesc", "PromptLabel"]:
+			var label := card.get_node_or_null(label_name) as Label
+			if label:
+				label.add_theme_color_override("font_color", Color("D4C8B0"))
+	var fish_img := card.get_node_or_null("FishImage") as TextureRect
+	if fish_img:
+		fish_img.offset_left = -128.0
+		fish_img.offset_right = 128.0
+		fish_img.offset_top = -180.0
+		fish_img.offset_bottom = -52.0
+		fish_img.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+func _ensure_buoy_placeholder() -> void:
+	const buoy_path := "res://models/buoy_red.glb"
+	var parent := get_parent()
+	if parent == null or parent.get_node_or_null("BuoyMarker"):
+		return
+	if ResourceLoader.exists(buoy_path):
+		var packed: PackedScene = load(buoy_path)
+		if packed:
+			var buoy := packed.instantiate()
+			buoy.name = "BuoyMarker"
+			if buoy is Node3D:
+				(buoy as Node3D).position = Vector3(6.0, 0.2, -16.0)
+			parent.add_child(buoy)
+			return
+	var marker := MeshInstance3D.new()
+	marker.name = "BuoyMarker"
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.16
+	cyl.bottom_radius = 0.16
+	cyl.height = 0.7
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("D1453A")
+	cyl.material = mat
+	marker.mesh = cyl
+	marker.position = Vector3(6.0, 0.35, -16.0)
+	parent.add_child(marker)
 
 func _flash(message: String, seconds: float = 2.4) -> void:
 	banner_text = message
