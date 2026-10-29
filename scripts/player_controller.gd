@@ -107,6 +107,7 @@ var sfx_flap: AudioStreamPlayer
 var pitch: float = 0.0
 var retro_shader_enabled: bool = true
 var _water_mat: ShaderMaterial
+var _rain_foam_set: bool = false
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -877,6 +878,10 @@ func _apply_lake_water_tint() -> void:
 		water.set_surface_override_material(0, _water_mat)
 	_water_mat.set_shader_parameter("surface_color", night_col.lerp(day_col, day_amount))
 	_water_mat.set_shader_parameter("depth_color", night_col)
+	const rain_path := "res://assets/vfx/rain_ripples.png"
+	if not _rain_foam_set and ResourceLoader.exists(rain_path):
+		_water_mat.set_shader_parameter("_foam", load(rain_path))
+		_rain_foam_set = true
 
 func _style_catch_card() -> void:
 	var card := hud.get_node_or_null("CatchCard") as Panel
@@ -888,6 +893,7 @@ func _style_catch_card() -> void:
 	card.offset_top = -260.0
 	card.offset_bottom = 260.0
 	if ResourceLoader.exists(card_path):
+		card.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var style := StyleBoxTexture.new()
 		style.texture = load(card_path)
 		card.add_theme_stylebox_override("panel", style)
