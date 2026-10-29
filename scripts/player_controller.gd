@@ -11,7 +11,8 @@ enum State {
 	CAUGHT,
 	REELING,
 	BACKLASH,
-	FLY_FALSE_CASTING
+	FLY_FALSE_CASTING,
+	SNAGGED
 }
 
 @export var mouse_sensitivity: float = 0.002
@@ -21,6 +22,30 @@ enum State {
 var current_discipline: FishingTypes.Discipline = FishingTypes.Discipline.SPINNING
 var current_state: State = State.IDLE
 var current_bait: String = "Worms"
+var banner_text: String = ""
+var banner_time: float = 0.0
+var _bait_index: int = 0
+var _hud_panel: TextureRect
+var _hud_fill: ColorRect
+var _slot_buttons: Array[Button] = []
+var _splash_nodes: Array[Sprite3D] = []
+
+const SPLASH_SHEET := "res://assets/vfx/splash_sheet.png"
+const HUD_SHEET := "res://assets/ui/hud_fishing.png"
+const TACKLE_SHEET := "res://assets/ui/tackle_box.png"
+const SLOT_ORIGIN := Vector2(88, 88)
+const SLOT_SIZE := 72.0
+const SLOT_GAP := 16.0
+const HUD_BAR_ORIGIN := Vector2(70, 18)
+const HUD_BAR_SIZE := Vector2(240, 12)
+const EXPECTED_SFX: PackedStringArray = [
+	"res://audio/sfx/whip.ogg",
+	"res://audio/sfx/sfx_fish_bite_1.ogg",
+	"res://audio/sfx/reel1.ogg",
+	"res://audio/sfx/thrash.ogg",
+	"res://audio/sfx/fighting_loop.ogg",
+	"res://audio/sfx/flapping.ogg",
+]
 
 # Fish fight & bite variables
 var bite_timer: float = 0.0
@@ -49,12 +74,13 @@ var fly_cast_timer: float = 0.0
 # Tackle Box & Day/Night Cycle
 var tackle_box_open: bool = false
 var flashlight_on: bool = false
-var time_of_day: float = 0.35 # 0.0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset
+var time_of_day: float = 0.62 # late day, so dusk and the night bite arrive in one sitting
 var day_cycle_speed: float = 0.006 # cycle speed
 
 # Economy & Stats
 var player_money: float = 25.0
 var total_fish_caught: int = 0
+var catch_notes: PackedStringArray = []
 
 # Audio reel crank cooldown
 var reel_sound_timer: float = 0.0
@@ -81,6 +107,8 @@ var sfx_flap: AudioStreamPlayer
 
 var pitch: float = 0.0
 var retro_shader_enabled: bool = true
+var _water_mat: ShaderMaterial
+var _rain_foam_set: bool = false
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -94,6 +122,13 @@ func _ready() -> void:
 		lure.reset_to_tip(rod_tip.global_position)
 	
 	_setup_tackle_box_ui()
+	_wire_hud_sheet()
+	_style_catch_card()
+	_ensure_buoy_placeholder.call_deferred()
+	_build_angler_blockout()
+	_style_rod_blockout()
+	_ensure_journal_stub()
+	_flash("Late day on the lake. After dark, worse things bite.", 4.5)
 	update_hud()
 
 func _init_audio_system() -> void:
@@ -103,25 +138,41 @@ func _init_audio_system() -> void:
 	sfx_reel = AudioStreamPlayer.new()
 	sfx_fight = AudioStreamPlayer.new()
 	sfx_flap = AudioStreamPlayer.new()
-	add_child(sfx_cast)
-	add_child(sfx_bite)
-	add_child(sfx_splash)
-	add_child(sfx_reel)
-	add_child(sfx_fight)
-	add_child(sfx_flap)
+	var players: Array[AudioStreamPlayer] = [sfx_cast, sfx_bite, sfx_splash, sfx_reel, sfx_fight, sfx_flap]
+	for player in players:
+		player.bus = "SFX"
+		add_child(player)
 
-	if ResourceLoader.exists("res://audio/sfx/whip.ogg"):
-		sfx_cast.stream = load("res://audio/sfx/whip.ogg")
-	if ResourceLoader.exists("res://audio/sfx/sfx_fish_bite_1.ogg"):
-		sfx_bite.stream = load("res://audio/sfx/sfx_fish_bite_1.ogg")
-	if ResourceLoader.exists("res://audio/sfx/reel1.ogg"):
-		sfx_reel.stream = load("res://audio/sfx/reel1.ogg")
-	if ResourceLoader.exists("res://audio/sfx/thrash.ogg"):
-		sfx_splash.stream = load("res://audio/sfx/thrash.ogg")
-	if ResourceLoader.exists("res://audio/sfx/fighting_loop.ogg"):
-		sfx_fight.stream = load("res://audio/sfx/fighting_loop.ogg")
-	if ResourceLoader.exists("res://audio/sfx/flapping.ogg"):
-		sfx_flap.stream = load("res://audio/sfx/flapping.ogg")
+	var streams := {
+		sfx_cast: "res://audio/sfx/whip.ogg",
+		sfx_bite: "res://audio/sfx/sfx_fish_bite_1.ogg",
+		sfx_reel: "res://audio/sfx/reel1.ogg",
+		sfx_splash: "res://audio/sfx/thrash.ogg",
+		sfx_fight: "res://audio/sfx/fighting_loop.ogg",
+		sfx_flap: "res://audio/sfx/flapping.ogg",
+	}
+	var missing: PackedStringArray = []
+	for player in streams:
+		var path: String = streams[player]
+		if ResourceLoader.exists(path):
+			player.stream = load(path)
+		else:
+			missing.append(path)
+	var bed_path := "res://audio/sfx/lake_ambience_v1.ogg"
+	if ResourceLoader.exists(bed_path):
+		var bed := AudioStreamPlayer.new()
+		bed.name = "LakeBed"
+		bed.bus = "Ambience"
+		var ogg: AudioStream = load(bed_path)
+		ogg = ogg.duplicate()
+		if ogg is AudioStreamOggVorbis:
+			(ogg as AudioStreamOggVorbis).loop = true
+		bed.stream = ogg
+		bed.volume_db = -10.0
+		add_child(bed)
+		bed.play()
+	if not missing.is_empty():
+		push_warning("Hopeless Catch SFX missing (left silent for Audio Lead): %s" % ", ".join(missing))
 
 func _create_rod_reel_mesh() -> void:
 	if not cork_handle or cork_handle.get_node_or_null("ReelPivot"):
@@ -159,30 +210,79 @@ func _create_rod_reel_mesh() -> void:
 	
 	reel_pivot.add_child(crank_arm)
 	cork_handle.add_child(reel_pivot)
+	_tint_reel_for_discipline()
 
 func _setup_tackle_box_ui() -> void:
 	if not hud:
 		return
+	var panel := hud.get_node_or_null("TackleBoxUI") as Panel
 	var container: HBoxContainer = hud.get_node_or_null("TackleBoxUI/BaitContainer")
-	if not container:
+	if not panel:
 		return
-	
-	for child in container.get_children():
-		child.queue_free()
-	
-	for bait in TackleBox.available_baits:
-		var btn: Button = Button.new()
-		btn.custom_minimum_size = Vector2(85, 95)
-		btn.text = bait.name
+	_slot_buttons.clear()
+	if container:
+		for child in container.get_children():
+			child.queue_free()
+		container.visible = false
+
+	var sheet: Texture2D = null
+	if ResourceLoader.exists(TACKLE_SHEET):
+		sheet = load(TACKLE_SHEET)
+		panel.offset_left = -240
+		panel.offset_right = 240
+		panel.offset_top = -160
+		panel.offset_bottom = 160
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		var bg := TextureRect.new()
+		bg.name = "TackleSheet"
+		bg.texture = sheet
+		bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg.stretch_mode = TextureRect.STRETCH_SCALE
+		panel.add_child(bg)
+		panel.move_child(bg, 0)
+		for label_name in ["Title", "CloseHelp"]:
+			var old := panel.get_node_or_null(label_name)
+			if old:
+				old.visible = false
+
+	for i in TackleBox.available_baits.size():
+		var bait: TackleBox.BaitData = TackleBox.available_baits[i]
+		var btn := Button.new()
+		btn.flat = true
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+		btn.expand_icon = true
+		if sheet:
+			btn.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
+			btn.offset_left = SLOT_ORIGIN.x + i * (SLOT_SIZE + SLOT_GAP)
+			btn.offset_top = SLOT_ORIGIN.y
+			btn.offset_right = btn.offset_left + SLOT_SIZE
+			btn.offset_bottom = btn.offset_top + SLOT_SIZE
+			panel.add_child(btn)
+		elif container:
+			btn.custom_minimum_size = Vector2(85, 95)
+			btn.text = bait.name
+			container.visible = true
+			container.add_child(btn)
 		if ResourceLoader.exists(bait.icon_path):
 			btn.icon = load(bait.icon_path)
-			btn.expand_icon = true
 		btn.pressed.connect(_on_bait_selected.bind(bait.name))
-		container.add_child(btn)
+		_slot_buttons.append(btn)
 
 func _on_bait_selected(bait_name: String) -> void:
+	var chosen := TackleBox.get_bait_by_id(bait_name)
+	if chosen.id == "rotten_meat" and not _is_after_dark():
+		_flash("Rotten offal unlocks after dark.")
+		return
+	for i in TackleBox.available_baits.size():
+		if TackleBox.available_baits[i].name == bait_name:
+			_bait_index = i
+			break
 	current_bait = bait_name
 	var desc_lbl: Label = hud.get_node_or_null("TackleBoxUI/BaitDesc")
 	var b_info = TackleBox.get_bait_by_id(bait_name)
@@ -216,6 +316,21 @@ func _input(event: InputEvent) -> void:
 			if event.keycode in [KEY_B, KEY_TAB, KEY_ESCAPE]:
 				toggle_tackle_box()
 				get_viewport().set_input_as_handled()
+			elif event.keycode in [KEY_LEFT, KEY_A]:
+				_cycle_bait(-1)
+			elif event.keycode in [KEY_RIGHT, KEY_D]:
+				_cycle_bait(1)
+			elif event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+				_confirm_bait_index()
+		elif event is InputEventJoypadButton and event.pressed:
+			if event.button_index == JOY_BUTTON_Y:
+				toggle_tackle_box()
+			elif event.button_index == JOY_BUTTON_DPAD_LEFT:
+				_cycle_bait(-1)
+			elif event.button_index == JOY_BUTTON_DPAD_RIGHT:
+				_cycle_bait(1)
+			elif event.button_index == JOY_BUTTON_A:
+				_confirm_bait_index()
 		return
 
 	if event is InputEventMouseButton and event.pressed:
@@ -244,7 +359,11 @@ func _input(event: InputEvent) -> void:
 				if current_state == State.IDLE or current_state == State.FISHING:
 					toggle_tackle_box()
 			KEY_F: toggle_flashlight()
+			KEY_J: _toggle_journal()
 			KEY_P: toggle_retro_shader()
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
+		if current_state == State.IDLE or current_state == State.FISHING:
+			toggle_tackle_box()
 
 func toggle_retro_shader() -> void:
 	retro_shader_enabled = !retro_shader_enabled
@@ -257,9 +376,13 @@ func set_discipline(new_discipline: FishingTypes.Discipline) -> void:
 		return
 	current_discipline = new_discipline
 	fly_line_out = 8.0
+	_tint_reel_for_discipline()
 	update_hud()
 
 func _physics_process(delta: float) -> void:
+	if banner_time > 0.0:
+		banner_time = maxf(banner_time - delta, 0.0)
+	_advance_splashes(delta)
 	_handle_day_night_cycle(delta)
 	_handle_movement(delta)
 	_handle_fishing_logic(delta)
@@ -289,17 +412,18 @@ func _handle_day_night_cycle(delta: float) -> void:
 			# Night
 			sun_light.light_energy = 0.08
 			sun_light.light_color = Color(0.2, 0.3, 0.5, 1.0)
+	_apply_lake_water_tint()
 
 func _handle_movement(delta: float) -> void:
 	if global_position.y < -1.0:
-		global_position = Vector3(0.0, 1.8, 3.5)
+		global_position = Vector3(0.0, 1.9, -8.0)
 		velocity = Vector3.ZERO
 
 	if not is_on_floor():
 		velocity.y -= 9.8 * delta
 	
 	# Allow walking while IDLE, waiting for bite, reeling empty lure, fighting fish, and holding trophy
-	var can_walk: bool = current_state in [State.IDLE, State.FISHING, State.REELING, State.FIGHTING, State.CAUGHT] and not tackle_box_open
+	var can_walk: bool = current_state in [State.IDLE, State.FISHING, State.REELING, State.FIGHTING, State.CAUGHT, State.SNAGGED] and not tackle_box_open
 	if can_walk:
 		var speed_mult: float = 1.0
 		if current_state == State.FIGHTING:
@@ -326,7 +450,7 @@ func _handle_fishing_logic(delta: float) -> void:
 		return
 
 	# Audio reel cranking loop
-	if Input.is_action_pressed("reel_in") and (current_state in [State.REELING, State.FIGHTING]):
+	if Input.is_action_pressed("reel_in") and (current_state in [State.REELING, State.FIGHTING, State.SNAGGED]):
 		reel_sound_timer -= delta
 		if reel_sound_timer <= 0.0:
 			reel_sound_timer = 0.14
@@ -380,13 +504,22 @@ func _handle_fishing_logic(delta: float) -> void:
 					spool_rpm = move_toward(spool_rpm, 0.0, 800.0 * delta)
 				else:
 					spool_rpm += 120.0 * delta
+			if lure and lure.consume_cast_failed():
+				current_state = State.IDLE
+				lure.reset_to_tip(rod_tip.global_position)
+				_flash("The cast never found water.")
+			elif lure and lure.snagged:
+				current_state = State.SNAGGED
+				_flash("Snagged. Hold reel to bring it back.")
 		
 		State.FISHING:
 			bite_timer -= delta
 			if bite_timer <= 0.0:
 				current_state = State.BITING
-				bite_reaction_timer = 1.4
+				bite_reaction_timer = 1.55
 				if sfx_bite: sfx_bite.play()
+				if lure:
+					lure.play_bite_dip()
 			
 			if Input.is_action_pressed("reel_in"):
 				current_state = State.REELING
@@ -394,7 +527,7 @@ func _handle_fishing_logic(delta: float) -> void:
 		State.BITING:
 			bite_reaction_timer -= delta
 			if Input.is_action_just_pressed("cast_line"):
-				current_fish = FishDatabase.roll_random_fish(current_bait)
+				current_fish = FishDatabase.roll_random_fish(current_bait, _is_after_dark())
 				current_state = State.FIGHTING
 				line_tension = 30.0
 				next_breach_timer = randf_range(3.0, 6.0)
@@ -403,6 +536,7 @@ func _handle_fishing_logic(delta: float) -> void:
 					lure.start_fish_fight(global_position, current_fish.get("difficulty", 2))
 				_attach_fish_to_hook(current_fish.get("model_path", ""))
 			elif bite_reaction_timer <= 0.0:
+				_flash("Too late. It left the bait.")
 				current_state = State.FISHING
 				var b_info = TackleBox.get_bait_by_id(current_bait)
 				bite_timer = randf_range(3.0, 6.0) / b_info.bite_speed_multiplier
@@ -410,33 +544,36 @@ func _handle_fishing_logic(delta: float) -> void:
 		State.FIGHTING:
 			var fish_diff: int = current_fish.get("difficulty", 2)
 			fish_run_timer += delta
-			var fish_pull: float = (12.0 + fish_diff * 4.5) + sin(fish_run_timer * 3.5) * 8.0
-			
-			# Fish fights laterally across your view
+			var stamina_factor := 1.0
 			if lure:
+				stamina_factor = clampf(lure.fish_stamina / 100.0, 0.0, 1.0)
 				lure.update_fish_fight_movement(global_position, delta)
+			var fish_pull: float = ((8.0 + fish_diff * 3.2) + sin(fish_run_timer * 3.5) * 6.0) * lerpf(0.35, 1.0, stamina_factor)
 
 			# Jump breach mechanic (Sega Bass Fishing style)
 			next_breach_timer -= delta
-			if next_breach_timer <= 0.0:
+			if next_breach_timer <= 0.0 and lure:
 				next_breach_timer = randf_range(5.0, 9.0)
 				lure.trigger_jump_breach()
 
 			if Input.is_action_pressed("reel_in"):
 				line_tension += fish_pull * delta
-				var reel_spd: float = 6.2 # Fast positive progress toward dock
+				var reel_spd: float = lerpf(8.5, 3.8, stamina_factor)
 				lure.reel_toward(global_position, reel_spd, delta)
 			else:
-				# Tension drops steadily when not reeling
-				line_tension = maxf(line_tension - 42.0 * delta, 10.0)
+				line_tension = maxf(line_tension - lerpf(52.0, 34.0, stamina_factor) * delta, 8.0)
 			
-			# Line snap
 			if line_tension >= 100.0:
+				_flash("Line snapped. The fish is gone.")
 				current_state = State.IDLE
 				current_fish = {}
 				_detach_fish_from_hook()
 				lure.reset_to_tip(rod_tip.global_position)
 				if sfx_fight and sfx_fight.playing: sfx_fight.stop()
+
+		State.SNAGGED:
+			if Input.is_action_pressed("reel_in") and lure:
+				lure.reel_toward(global_position, 8.0, delta)
 
 		State.CAUGHT:
 			# Choice: Keep (Left-Click or Spacebar) vs Release (Right-Click)
@@ -445,6 +582,7 @@ func _handle_fishing_logic(delta: float) -> void:
 				var reward: float = current_fish.get("weight", 1.0) * 2.5
 				player_money += reward
 				total_fish_caught += 1
+				_note_catch()
 				_finish_catch()
 			elif Input.is_action_just_pressed("reel_in"):
 				# Release fish: moral bonus
@@ -494,7 +632,8 @@ func _execute_fly_presentation() -> void:
 	var launch_velocity: Vector3 = launch_dir * (fly_line_out * 1.3)
 	lure.launch(rod_tip.global_position, launch_velocity)
 
-func _on_lure_splashed(_splash_pos: Vector3) -> void:
+func _on_lure_splashed(splash_pos: Vector3) -> void:
+	_spawn_splash(splash_pos)
 	if sfx_splash:
 		sfx_splash.pitch_scale = randf_range(0.9, 1.2)
 		sfx_splash.play()
@@ -539,6 +678,7 @@ func _spawn_trophy_3d_pose(model_path: String) -> void:
 			inst.scale = Vector3(0.65, 0.65, 0.65)
 			inst.position = Vector3(0.0, 0.0, 0.0)
 			inst.rotation_degrees = Vector3(10.0, -35.0, 5.0)
+			_tint_fish_meshes(inst, current_fish.get("tint_hex", ""))
 			trophy_holder.add_child(inst)
 
 func _attach_fish_to_hook(model_path: String) -> void:
@@ -551,7 +691,26 @@ func _attach_fish_to_hook(model_path: String) -> void:
 			# Position fish hanging mouth-first from the lure
 			inst.position = Vector3(0.0, -0.4, 0.0)
 			inst.scale = Vector3(0.45, 0.45, 0.45)
+			_tint_fish_meshes(inst, current_fish.get("tint_hex", ""))
 			lure.add_child(inst)
+
+func _tint_fish_meshes(node: Node, hex: String) -> void:
+	if hex == "":
+		return
+	if node is MeshInstance3D:
+		(node as MeshInstance3D).material_override = _flat_mat(hex)
+	for child in node.get_children():
+		_tint_fish_meshes(child, hex)
+
+func _note_catch() -> void:
+	var line := "%s  %.1f lb" % [current_fish.get("name", "Fish"), float(current_fish.get("weight", 0.0))]
+	catch_notes.append(line)
+	if catch_notes.size() > 8:
+		catch_notes.remove_at(0)
+	var panel := hud.get_node_or_null("JournalStub") if hud else null
+	var body := panel.get_node_or_null("JournalBody") as Label if panel else null
+	if body:
+		body.text = "\n".join(catch_notes)
 
 func _detach_fish_from_hook() -> void:
 	if lure:
@@ -663,7 +822,10 @@ func update_hud() -> void:
 			State.BITING:
 				label_status.text = "⚡ FISH BITE! CLICK LEFT-MOUSE TO SET THE HOOK!"
 			State.FIGHTING:
-				label_status.text = "FIGHTING %s! Right-Click: Reel | Watch for Breaches!" % current_fish.get("name", "Fish")
+				var stamina := lure.fish_stamina if lure else 0.0
+				label_status.text = "FIGHTING %s. Tension %d%%. Fish stamina %.0f. Reel, then let go when it climbs." % [current_fish.get("name", "Fish"), int(line_tension), stamina]
+			State.SNAGGED:
+				label_status.text = "The lure is on shore. Hold right-click or the right trigger to retrieve it."
 			State.CAUGHT:
 				var val: float = current_fish.get("weight", 1.0) * 2.5
 				label_status.text = "CAUGHT %s! Left-Click: KEEP (+$%.2f) | Right-Click: RELEASE" % [current_fish.get("name", "Fish").to_upper(), val]
@@ -673,7 +835,10 @@ func update_hud() -> void:
 				label_status.text = "BIRD'S-NEST / BACKLASH! TAP SPACEBAR RAPIDLY TO UNTANGLE!"
 				
 	if warning_label:
-		if current_state == State.BACKLASH:
+		if banner_time > 0.0:
+			warning_label.visible = true
+			warning_label.text = banner_text
+		elif current_state == State.BACKLASH:
 			warning_label.visible = true
 			warning_label.text = "⚠️ SPOOL BACKLASH! Untangle: %d%%" % int(backlash_severity * 100.0)
 		elif current_state == State.BITING:
@@ -688,13 +853,31 @@ func update_hud() -> void:
 		else:
 			warning_label.visible = false
 
+	var meter := 0.0
+	var show_meter := false
+	if current_state == State.FIGHTING:
+		meter = line_tension / 100.0
+		show_meter = true
+	elif current_state == State.CHARGING_CAST:
+		meter = cast_power / max_cast_power
+		show_meter = true
+	_update_hud_fill(meter, show_meter, current_state == State.FIGHTING)
+
 	var tension_bar: ProgressBar = hud.get_node_or_null("TensionBar")
 	if tension_bar:
-		if current_state == State.FIGHTING:
+		if _hud_panel:
+			tension_bar.visible = false
+		elif current_state == State.FIGHTING:
 			tension_bar.visible = true
 			tension_bar.value = line_tension
 		else:
 			tension_bar.visible = false
+
+	var power_bar_art: ProgressBar = hud.get_node_or_null("CastPowerBar")
+	if power_bar_art and _hud_panel and current_state == State.CHARGING_CAST:
+		power_bar_art.visible = false
+
+	_refresh_slot_locks()
 
 	var catch_card: Control = hud.get_node_or_null("CatchCard")
 	if catch_card:
@@ -711,6 +894,337 @@ func update_hud() -> void:
 			if stat_lbl: stat_lbl.text = "Weight: %.1f lbs | Value: $%.2f | Rarity: %s" % [current_fish.get("weight", 1.0), val, current_fish.get("rarity", "Common")]
 			if prompt_lbl: prompt_lbl.text = "[ Left-Click: KEEP (+$%.2f)  |  Right-Click: RELEASE ]" % val
 			if fish_img and ResourceLoader.exists(current_fish.get("texture_path", "")):
+				fish_img.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 				fish_img.texture = load(current_fish.get("texture_path"))
 		else:
 			catch_card.visible = false
+
+func _build_angler_blockout() -> void:
+	if camera == null or camera.get_node_or_null("Angler"):
+		return
+	var angler := Node3D.new()
+	angler.name = "Angler"
+	camera.add_child(angler)
+	var torso := BoxMesh.new()
+	torso.size = Vector3(0.46, 0.42, 0.22)
+	torso.material = _flat_mat("2A2018")
+	var torso_inst := MeshInstance3D.new()
+	torso_inst.name = "Torso"
+	torso_inst.mesh = torso
+	torso_inst.position = Vector3(0.0, -0.55, 0.05)
+	angler.add_child(torso_inst)
+	var arm := BoxMesh.new()
+	arm.size = Vector3(0.12, 0.34, 0.12)
+	arm.material = _flat_mat("B8A090")
+	for side in [-1.0, 1.0]:
+		var arm_inst := MeshInstance3D.new()
+		arm_inst.name = "Arm"
+		arm_inst.mesh = arm
+		arm_inst.position = Vector3(0.28 * side, -0.42, -0.12)
+		angler.add_child(arm_inst)
+	if flashlight:
+		var lamp := BoxMesh.new()
+		lamp.size = Vector3(0.08, 0.1, 0.08)
+		var glow := _flat_mat("E07828")
+		glow.emission_enabled = true
+		glow.emission = Color("E07828")
+		glow.emission_energy_multiplier = 0.4
+		lamp.material = glow
+		var lamp_inst := MeshInstance3D.new()
+		lamp_inst.name = "Lantern"
+		lamp_inst.mesh = lamp
+		flashlight.add_child(lamp_inst)
+
+func _style_rod_blockout() -> void:
+	var rod := get_node_or_null("Camera3D/RodPivot/RodMesh") as MeshInstance3D
+	if rod:
+		rod.material_override = _flat_mat("2A2018")
+	var cork := get_node_or_null("Camera3D/RodPivot/RodMesh/CorkHandle") as MeshInstance3D
+	if cork:
+		cork.material_override = _flat_mat("B8A090")
+
+func _tint_reel_for_discipline() -> void:
+	if cork_handle == null:
+		return
+	var reel := cork_handle.get_node_or_null("ReelPivot/ReelBody") as MeshInstance3D
+	if reel == null:
+		return
+	var hex := "B8A090"
+	match current_discipline:
+		FishingTypes.Discipline.BAITCASTING:
+			hex = "2A2018"
+		FishingTypes.Discipline.SPINCAST:
+			hex = "D4C8B0"
+		FishingTypes.Discipline.FLY_FISHING:
+			hex = "E07828"
+		_:
+			hex = "B8A090"
+	reel.material_override = _flat_mat(hex)
+
+func _flat_mat(hex: String) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(hex)
+	mat.roughness = 1.0
+	mat.metallic = 0.0
+	return mat
+
+func _ensure_journal_stub() -> void:
+	if hud == null or hud.get_node_or_null("JournalStub"):
+		return
+	var panel := Panel.new()
+	panel.name = "JournalStub"
+	panel.visible = false
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -210.0
+	panel.offset_right = 210.0
+	panel.offset_top = -260.0
+	panel.offset_bottom = 260.0
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color("D4C8B0")
+	box.border_color = Color("2A2018")
+	box.set_border_width_all(4)
+	panel.add_theme_stylebox_override("panel", box)
+	var title := Label.new()
+	title.text = "Field journal"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(24, 28)
+	title.size = Vector2(372, 32)
+	title.add_theme_color_override("font_color", Color("2A2018"))
+	panel.add_child(title)
+	var body := Label.new()
+	body.name = "JournalBody"
+	body.text = "Nothing kept yet. Day fish are ordinary. After dark, the journal changes."
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.position = Vector2(28, 78)
+	body.size = Vector2(364, 120)
+	body.add_theme_color_override("font_color", Color("2A2018"))
+	panel.add_child(body)
+	var hint := Label.new()
+	hint.text = "J closes"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(24, 470)
+	hint.size = Vector2(372, 28)
+	hint.add_theme_color_override("font_color", Color("B8A090"))
+	panel.add_child(hint)
+	hud.add_child(panel)
+
+func _toggle_journal() -> void:
+	var panel := hud.get_node_or_null("JournalStub") if hud else null
+	if panel:
+		panel.visible = not panel.visible
+
+func _apply_lake_water_tint() -> void:
+	var day_amount := 0.0
+	if time_of_day > 0.2 and time_of_day < 0.7:
+		day_amount = 1.0
+	elif time_of_day >= 0.7 and time_of_day < 0.8:
+		day_amount = 1.0 - (time_of_day - 0.7) / 0.1
+	elif time_of_day >= 0.15 and time_of_day <= 0.2:
+		day_amount = (time_of_day - 0.15) / 0.05
+	var day_col := Color("65ACB2")
+	var night_col := Color("122E36")
+	if _water_mat == null:
+		var water := get_node_or_null("../WaterPlane") as MeshInstance3D
+		if water == null:
+			return
+		var source := water.get_active_material(0) as ShaderMaterial
+		if source == null:
+			return
+		_water_mat = source.duplicate() as ShaderMaterial
+		water.set_surface_override_material(0, _water_mat)
+	_water_mat.set_shader_parameter("surface_color", night_col.lerp(day_col, day_amount))
+	_water_mat.set_shader_parameter("depth_color", night_col)
+	if world_env and world_env.environment:
+		var env := world_env.environment
+		var dusk_fog := Color("1E4A52")
+		env.fog_light_color = night_col.lerp(dusk_fog, day_amount)
+		env.fog_density = lerpf(0.02, 0.008, day_amount)
+		var sky_mat := env.sky.sky_material as ProceduralSkyMaterial if env.sky else null
+		if sky_mat:
+			sky_mat.sky_top_color = night_col.lerp(dusk_fog, day_amount)
+			sky_mat.sky_horizon_color = dusk_fog.lerp(day_col, day_amount)
+			sky_mat.ground_bottom_color = night_col
+			sky_mat.ground_horizon_color = night_col.lerp(dusk_fog, day_amount)
+	const rain_path := "res://assets/vfx/rain_ripples.png"
+	if not _rain_foam_set and ResourceLoader.exists(rain_path):
+		_water_mat.set_shader_parameter("_foam", load(rain_path))
+		_rain_foam_set = true
+
+func _style_catch_card() -> void:
+	var card := hud.get_node_or_null("CatchCard") as Panel
+	if card == null:
+		return
+	const card_path := "res://assets/ui/catch_card.png"
+	card.offset_left = -210.0
+	card.offset_right = 210.0
+	card.offset_top = -260.0
+	card.offset_bottom = 260.0
+	if ResourceLoader.exists(card_path):
+		card.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		var style := StyleBoxTexture.new()
+		style.texture = load(card_path)
+		card.add_theme_stylebox_override("panel", style)
+	else:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color("2A2018")
+		box.border_color = Color("B8A090")
+		box.set_border_width_all(3)
+		card.add_theme_stylebox_override("panel", box)
+		for label_name in ["CardTitle", "FishName", "FishStats", "FishDesc", "PromptLabel"]:
+			var label := card.get_node_or_null(label_name) as Label
+			if label:
+				label.add_theme_color_override("font_color", Color("D4C8B0"))
+	var fish_img := card.get_node_or_null("FishImage") as TextureRect
+	if fish_img:
+		fish_img.offset_left = -128.0
+		fish_img.offset_right = 128.0
+		fish_img.offset_top = -180.0
+		fish_img.offset_bottom = -52.0
+		fish_img.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+func _ensure_buoy_placeholder() -> void:
+	const buoy_path := "res://models/buoy_red.glb"
+	var parent := get_parent()
+	if parent == null or parent.get_node_or_null("BuoyMarker"):
+		return
+	if ResourceLoader.exists(buoy_path):
+		var packed: PackedScene = load(buoy_path)
+		if packed:
+			var buoy := packed.instantiate()
+			buoy.name = "BuoyMarker"
+			if buoy is Node3D:
+				(buoy as Node3D).position = Vector3(6.0, 0.2, -16.0)
+			parent.add_child(buoy)
+			return
+	var marker := MeshInstance3D.new()
+	marker.name = "BuoyMarker"
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.16
+	cyl.bottom_radius = 0.16
+	cyl.height = 0.7
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("D1453A")
+	cyl.material = mat
+	marker.mesh = cyl
+	marker.position = Vector3(6.0, 0.35, -16.0)
+	parent.add_child(marker)
+
+func _flash(message: String, seconds: float = 2.4) -> void:
+	banner_text = message
+	banner_time = seconds
+
+func _is_after_dark() -> bool:
+	return time_of_day < 0.15 or time_of_day >= 0.8
+
+func _cycle_bait(direction: int) -> void:
+	if TackleBox.available_baits.is_empty():
+		return
+	_bait_index = posmod(_bait_index + direction, TackleBox.available_baits.size())
+	_highlight_bait_index()
+
+func _confirm_bait_index() -> void:
+	if _bait_index < 0 or _bait_index >= TackleBox.available_baits.size():
+		return
+	_on_bait_selected(TackleBox.available_baits[_bait_index].name)
+
+func _highlight_bait_index() -> void:
+	for i in _slot_buttons.size():
+		var btn := _slot_buttons[i]
+		if not is_instance_valid(btn):
+			continue
+		btn.modulate = Color("D4C8B0") if i == _bait_index else Color("B8A090")
+
+func _refresh_slot_locks() -> void:
+	var dark := _is_after_dark()
+	for i in mini(_slot_buttons.size(), TackleBox.available_baits.size()):
+		var bait := TackleBox.available_baits[i]
+		var btn := _slot_buttons[i]
+		if not is_instance_valid(btn):
+			continue
+		var locked := bait.id == "rotten_meat" and not dark
+		btn.disabled = locked
+		if locked:
+			btn.modulate = Color("2A2018")
+		elif i == _bait_index:
+			btn.modulate = Color("D4C8B0")
+		else:
+			btn.modulate = Color("B8A090")
+
+func _wire_hud_sheet() -> void:
+	if not hud or not ResourceLoader.exists(HUD_SHEET):
+		return
+	var tex: Texture2D = load(HUD_SHEET)
+	_hud_panel = TextureRect.new()
+	_hud_panel.name = "HudFishingSheet"
+	_hud_panel.texture = tex
+	_hud_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_hud_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud_panel.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_hud_panel.stretch_mode = TextureRect.STRETCH_SCALE
+	_hud_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_hud_panel.offset_left = -160
+	_hud_panel.offset_right = 160
+	_hud_panel.offset_top = -128
+	_hud_panel.offset_bottom = -80
+	_hud_panel.visible = false
+	hud.add_child(_hud_panel)
+	var track := ColorRect.new()
+	track.color = Color("2A2018")
+	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	track.position = HUD_BAR_ORIGIN
+	track.size = HUD_BAR_SIZE
+	_hud_panel.add_child(track)
+	_hud_fill = ColorRect.new()
+	_hud_fill.color = Color("65ACB2")
+	_hud_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud_fill.position = HUD_BAR_ORIGIN
+	_hud_fill.size = Vector2(0, HUD_BAR_SIZE.y)
+	_hud_panel.add_child(_hud_fill)
+
+func _update_hud_fill(ratio: float, show: bool, danger: bool) -> void:
+	if not _hud_panel or not _hud_fill:
+		return
+	_hud_panel.visible = show
+	var clamped := clampf(ratio, 0.0, 1.0)
+	_hud_fill.size = Vector2(HUD_BAR_SIZE.x * clamped, HUD_BAR_SIZE.y)
+	_hud_fill.color = Color("D1453A") if danger and clamped > 0.75 else Color("65ACB2")
+
+func _spawn_splash(pos: Vector3) -> void:
+	if not ResourceLoader.exists(SPLASH_SHEET):
+		return
+	var live: Array[Sprite3D] = []
+	for node in _splash_nodes:
+		if is_instance_valid(node):
+			live.append(node)
+	_splash_nodes = live
+	if _splash_nodes.size() >= 2:
+		return
+	var sprite := Sprite3D.new()
+	sprite.texture = load(SPLASH_SHEET)
+	sprite.hframes = 6
+	sprite.vframes = 1
+	sprite.frame = 0
+	sprite.pixel_size = 0.015
+	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	sprite.shaded = false
+	sprite.double_sided = false
+	sprite.position = pos + Vector3(0, 0.25, 0)
+	sprite.set_meta("age", 0.0)
+	get_parent().add_child(sprite)
+	_splash_nodes.append(sprite)
+
+func _advance_splashes(delta: float) -> void:
+	var live: Array[Sprite3D] = []
+	for sprite in _splash_nodes:
+		if not is_instance_valid(sprite):
+			continue
+		var age := float(sprite.get_meta("age")) + delta
+		var frame := int(age * 12.0)
+		if frame >= 6:
+			sprite.queue_free()
+			continue
+		sprite.set_meta("age", age)
+		sprite.frame = frame
+		live.append(sprite)
+	_splash_nodes = live

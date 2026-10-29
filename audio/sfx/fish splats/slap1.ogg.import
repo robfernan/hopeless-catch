@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bubqsgh56o7t8"
+path="res://.godot/imported/slap1.ogg-9140b59e2884d3082c9fc1520ebc0373.oggvorbisstr"
+
+[deps]
+
+source_file="res://audio/sfx/fish splats/slap1.ogg"
+dest_files=["res://.godot/imported/slap1.ogg-9140b59e2884d3082c9fc1520ebc0373.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

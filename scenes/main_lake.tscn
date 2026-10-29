@@ -4,17 +4,15 @@
 [ext_resource type="Script" uid="uid://cifc4071v4qnf" path="res://scripts/fishing_line.gd" id="3_line_script"]
 [ext_resource type="Script" uid="uid://byyx37f7wnfdp" path="res://scripts/player_controller.gd" id="4_player_script"]
 [ext_resource type="Shader" uid="uid://g8ky7ng0v357" path="res://shaders/dither.gdshader" id="5_dither_shader"]
-[ext_resource type="Material" uid="uid://bcbp2mmd8j2d5" path="res://materials/about_fishing_water.tres" id="6_about_water"]
-[ext_resource type="PackedScene" uid="uid://bqg4exisw4t3f" path="res://models/rocks.glb" id="7_rocks"]
-[ext_resource type="PackedScene" uid="uid://vqxq8pcojsbw" path="res://models/tree.glb" id="8_tree"]
-[ext_resource type="PackedScene" uid="uid://bv8yiv7yjenc5" path="res://models/hands.glb" id="9_hands"]
+[ext_resource type="Material" uid="uid://blakewaterhc01" path="res://materials/lake_water.tres" id="6_lake_water"]
 [ext_resource type="Script" uid="uid://dfhp0uusvqjbb" path="res://scripts/minimap.gd" id="10_minimap"]
+[ext_resource type="Script" path="res://scripts/shore_kit.gd" id="14_shore"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
-sky_top_color = Color(0.28, 0.48, 0.68, 1)
-sky_horizon_color = Color(0.78, 0.72, 0.65, 1)
-ground_bottom_color = Color(0.15, 0.18, 0.2, 1)
-ground_horizon_color = Color(0.65, 0.6, 0.55, 1)
+sky_top_color = Color(0.117647, 0.290196, 0.321569, 1)
+sky_horizon_color = Color(0.396078, 0.67451, 0.698039, 1)
+ground_bottom_color = Color(0.070588, 0.180392, 0.211765, 1)
+ground_horizon_color = Color(0.117647, 0.290196, 0.321569, 1)
 
 [sub_resource type="Sky" id="Sky_env"]
 sky_material = SubResource("ProceduralSkyMaterial_sky")
@@ -27,44 +25,42 @@ reflected_light_source = 2
 tonemap_mode = 3
 glow_enabled = true
 fog_enabled = true
-fog_light_color = Color(0.65, 0.74, 0.78, 1)
-fog_density = 0.005
+fog_light_color = Color(0.117647, 0.290196, 0.321569, 1)
+fog_density = 0.008
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_water"]
-material = ExtResource("6_about_water")
-size = Vector2(300, 300)
-subdivide_width = 64
-subdivide_depth = 64
+material = ExtResource("6_lake_water")
+size = Vector2(420, 360)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_lakebed"]
-albedo_color = Color(0.09, 0.16, 0.13, 1)
+albedo_color = Color(0.070588, 0.180392, 0.211765, 1)
 roughness = 0.95
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_lakebed"]
 material = SubResource("StandardMaterial3D_lakebed")
-size = Vector2(350, 350)
+size = Vector2(420, 360)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sand"]
-albedo_color = Color(0.72, 0.65, 0.52, 1)
+albedo_color = Color(0.721569, 0.627451, 0.564706, 1)
 roughness = 0.92
 
 [sub_resource type="BoxMesh" id="BoxMesh_mainland"]
 material = SubResource("StandardMaterial3D_sand")
-size = Vector3(160, 2.5, 90)
+size = Vector3(180, 2.4, 88)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_mainland"]
-size = Vector3(160, 2.5, 90)
+size = Vector3(180, 2.4, 88)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock"]
-albedo_color = Color(0.38, 0.29, 0.22, 1)
+albedo_color = Color(0.164706, 0.12549, 0.094118, 1)
 roughness = 0.85
 
 [sub_resource type="BoxMesh" id="BoxMesh_dock"]
 material = SubResource("StandardMaterial3D_dock")
-size = Vector3(3.5, 0.35, 16)
+size = Vector3(3.2, 0.35, 15)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dock_col"]
-size = Vector3(3.5, 0.35, 16)
+size = Vector3(3.2, 0.35, 15)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_piling"]
 material = SubResource("StandardMaterial3D_dock")
@@ -89,9 +85,9 @@ radius = 0.4
 height = 1.8
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rod"]
-albedo_color = Color(0.12, 0.14, 0.16, 1)
-metallic = 0.85
-roughness = 0.25
+albedo_color = Color(0.164706, 0.12549, 0.094118, 1)
+metallic = 0.0
+roughness = 1.0
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_rod"]
 material = SubResource("StandardMaterial3D_rod")
@@ -100,7 +96,7 @@ bottom_radius = 0.035
 height = 2.4
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cork"]
-albedo_color = Color(0.76, 0.62, 0.45, 1)
+albedo_color = Color(0.721569, 0.627451, 0.564706, 1)
 roughness = 0.9
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_cork"]
@@ -128,15 +124,15 @@ light_energy = 1.15
 shadow_enabled = true
 
 [node name="WaterPlane" type="MeshInstance3D" parent="." unique_id=1354663038]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.49586868, 0, -100.27089)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -70)
 mesh = SubResource("PlaneMesh_water")
 
 [node name="LakeBed" type="MeshInstance3D" parent="." unique_id=1278789106]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.5, -100)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.2, -70)
 mesh = SubResource("PlaneMesh_lakebed")
 
 [node name="MainlandCoast" type="StaticBody3D" parent="." unique_id=15803900]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.325, 46)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.28, 46)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="MainlandCoast" unique_id=504947346]
 mesh = SubResource("BoxMesh_mainland")
@@ -145,7 +141,7 @@ mesh = SubResource("BoxMesh_mainland")
 shape = SubResource("BoxShape3D_mainland")
 
 [node name="Dock" type="StaticBody3D" parent="." unique_id=1408530617]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -3.5)
 
 [node name="Planks" type="MeshInstance3D" parent="Dock" unique_id=1627598165]
 mesh = SubResource("BoxMesh_dock")
@@ -154,32 +150,23 @@ mesh = SubResource("BoxMesh_dock")
 shape = SubResource("BoxShape3D_dock_col")
 
 [node name="Piling1" type="MeshInstance3D" parent="Dock" unique_id=1789100408]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, -1.2, -5.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.35, -1.4, -6.2)
 mesh = SubResource("CylinderMesh_piling")
 
 [node name="Piling2" type="MeshInstance3D" parent="Dock" unique_id=2017393233]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, -1.2, -5.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, -1.4, -6.2)
 mesh = SubResource("CylinderMesh_piling")
 
 [node name="Piling3" type="MeshInstance3D" parent="Dock" unique_id=1881386714]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, -1.2, 1.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.35, -1.4, 5.4)
 mesh = SubResource("CylinderMesh_piling")
 
 [node name="Piling4" type="MeshInstance3D" parent="Dock" unique_id=831355343]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, -1.2, 1.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, -1.4, 5.4)
 mesh = SubResource("CylinderMesh_piling")
 
-[node name="RocksLeft" parent="." unique_id=1978281992 instance=ExtResource("7_rocks")]
-transform = Transform3D(1.8, 0, 0, 0, 1.8, 0, 0, 0, 1.8, -9, 0.1, 4)
-
-[node name="RocksRight" parent="." unique_id=147783311 instance=ExtResource("7_rocks")]
-transform = Transform3D(2.2, 0, 0, 0, 2.2, 0, 0, 0, 2.2, 8, 0.1, 6)
-
-[node name="Tree1" parent="." unique_id=1857208027 instance=ExtResource("8_tree")]
-transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, -12, 1.2, 16)
-
-[node name="Tree2" parent="." unique_id=1180820566 instance=ExtResource("8_tree")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 11, 1.2, 18)
+[node name="ShoreKit" type="Node3D" parent="."]
+script = ExtResource("14_shore")
 
 [node name="Lure" type="CharacterBody3D" parent="." unique_id=1321604827]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.8, -1.8)
@@ -197,7 +184,7 @@ rod_tip = NodePath("../Player/Camera3D/RodPivot/RodMesh/RodTip")
 lure = NodePath("../Lure")
 
 [node name="Player" type="CharacterBody3D" parent="." unique_id=1896442182]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, -8)
 script = ExtResource("4_player_script")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1382604137]
@@ -221,9 +208,6 @@ mesh = SubResource("CylinderMesh_cork")
 [node name="RodTip" type="Marker3D" parent="Player/Camera3D/RodPivot/RodMesh" unique_id=170674314]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 
-[node name="Hands" parent="Player/Camera3D/RodPivot" unique_id=1093516949 instance=ExtResource("9_hands")]
-transform = Transform3D(0.4, 0, 0, 0, 0.35, 0.2, 0, -0.2, 0.35, -0.05, -0.15, 0.1)
-
 [node name="TrophyHolder" type="Node3D" parent="Player/Camera3D" unique_id=356750383]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.2, -0.15, -0.9)
 visible = false
@@ -231,7 +215,7 @@ visible = false
 [node name="Flashlight" type="SpotLight3D" parent="Player/Camera3D" unique_id=1709683332]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -0.2)
 visible = false
-light_color = Color(1, 0.95, 0.85, 1)
+light_color = Color(0.878431, 0.470588, 0.156863, 1)
 light_energy = 2.5
 spot_range = 28.0
 spot_angle = 32.0
